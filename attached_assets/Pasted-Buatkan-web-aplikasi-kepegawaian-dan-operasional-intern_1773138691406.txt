@@ -1,0 +1,368 @@
+Buatkan web aplikasi kepegawaian dan operasional internal PDAM yang modern, profesional, bersih, responsif, dan premium-looking, khusus untuk kebutuhan perusahaan daerah air minum. Sistem harus berbasis web dashboard dengan tampilan UI/UX yang elegan, minimalis, rapi, dan tidak jadul. Hindari desain kuno seperti tabel polos tanpa hierarki visual, warna kusam, tombol default, atau layout sempit. Gunakan desain yang terasa seperti aplikasi SaaS modern.
+
+Karakter visual yang diinginkan
+	•	Gaya desain modern enterprise dashboard
+	•	Clean layout, whitespace cukup, card UI, statistik ringkas, ikon konsisten
+	•	Dominan warna biru, putih, abu muda, dengan aksen hijau atau turquoise agar terasa segar dan relevan dengan air/PDAM
+	•	Gunakan typography modern seperti Inter / Poppins / Manrope
+	•	Komponen harus halus: rounded corner medium, shadow tipis, hover effect elegan, transisi lembut
+	•	Sidebar modern, topbar informatif, dashboard ringkas tapi powerful
+	•	Support dark mode dan light mode
+	•	Mobile responsive
+	•	Jangan tampil jadul seperti aplikasi pemerintahan lama
+
+⸻
+
+Modul utama yang harus ada
+
+1. Dashboard utama
+
+Tampilkan dashboard ringkas dengan informasi penting:
+	•	total pegawai
+	•	pegawai aktif
+	•	pegawai kontrak
+	•	pegawai pensiun / akan pensiun
+	•	absensi hari ini
+	•	keterlambatan hari ini
+	•	cuti aktif
+	•	pengajuan yang menunggu persetujuan
+	•	ringkasan gaji bulan berjalan
+	•	total lembur bulan ini
+	•	grafik kehadiran
+	•	grafik biaya gaji dan tunjangan
+	•	notifikasi internal
+	•	agenda / reminder
+
+Dashboard harus terlihat visual, memakai:
+	•	statistic cards
+	•	line chart
+	•	bar chart
+	•	pie chart
+	•	tabel aktivitas terbaru
+
+⸻
+
+2. Modul data pegawai
+
+Buat halaman manajemen pegawai lengkap, meliputi:
+	•	NIP / ID pegawai
+	•	nama lengkap
+	•	foto profil
+	•	jabatan
+	•	divisi / bagian
+	•	unit kerja / cabang
+	•	status pegawai
+	•	jenis kelamin
+	•	tempat tanggal lahir
+	•	alamat
+	•	nomor HP
+	•	email
+	•	agama
+	•	pendidikan terakhir
+	•	golongan / grade
+	•	tanggal masuk kerja
+	•	masa kerja
+	•	NPWP
+	•	BPJS
+	•	rekening bank
+	•	status pernikahan
+	•	data keluarga
+	•	dokumen penting
+
+Fitur:
+	•	tambah/edit/hapus pegawai
+	•	upload dokumen
+	•	pencarian cepat
+	•	filter per divisi, status, jabatan
+	•	detail profil pegawai yang modern
+	•	riwayat mutasi/promosi/demosi
+	•	histori pelanggaran/disiplin
+	•	histori pelatihan
+	•	histori penilaian kinerja
+
+⸻
+
+3. Modul absensi
+
+Buat sistem absensi yang lengkap:
+	•	check in
+	•	check out
+	•	jam kerja
+	•	keterlambatan
+	•	pulang cepat
+	•	lembur
+	•	absensi shift
+	•	rekap absensi harian, mingguan, bulanan
+	•	integrasi lokasi/GPS jika diperlukan
+	•	selfie/foto absensi opsional
+	•	status hadir, izin, sakit, cuti, dinas luar, alpha
+
+Fitur:
+	•	dashboard absensi harian
+	•	kalender absensi
+	•	approval koreksi absensi
+	•	export Excel/PDF
+	•	monitoring real-time kehadiran
+	•	heatmap kehadiran
+	•	daftar pegawai terlambat
+	•	grafik tren keterlambatan
+
+UI absensi harus modern, dengan:
+	•	calendar view
+	•	attendance cards
+	•	shift badges
+	•	status color coding yang elegan
+
+⸻
+
+4. Modul cuti, izin, dan dinas luar
+
+Sediakan fitur:
+	•	pengajuan cuti tahunan
+	•	cuti sakit
+	•	cuti melahirkan
+	•	izin pribadi
+	•	dinas luar
+	•	approval berjenjang
+	•	saldo cuti
+	•	histori pengajuan
+	•	lampiran dokumen pendukung
+	•	notifikasi approve/reject
+
+Buat alur approval yang jelas:
+pegawai → atasan langsung → HRD → final
+
+⸻
+
+5. Modul payroll / penggajian
+
+Buat sistem penggajian lengkap:
+	•	gaji pokok
+	•	tunjangan jabatan
+	•	tunjangan keluarga
+	•	tunjangan transport
+	•	tunjangan makan
+	•	insentif
+	•	lembur
+	•	potongan absensi
+	•	BPJS
+	•	pajak PPh 21
+	•	pinjaman / kasbon
+	•	bonus
+	•	THR
+
+Fitur:
+	•	generate payroll bulanan
+	•	slip gaji digital
+	•	histori slip gaji
+	•	approval payroll
+	•	export PDF/Excel
+	•	integrasi absensi ke payroll
+	•	simulasi gaji
+	•	ringkasan biaya SDM
+	•	laporan payroll per unit/divisi/cabang
+
+UI payroll harus terlihat premium dan rapi, bukan hanya tabel mentah.
+
+⸻
+
+6. Modul keuangan internal
+
+Buat modul keuangan untuk kebutuhan internal PDAM:
+	•	kas masuk
+	•	kas keluar
+	•	pengeluaran operasional
+	•	anggaran divisi
+	•	reimbursement pegawai
+	•	biaya perjalanan dinas
+	•	pengadaan internal
+	•	honorarium
+	•	pembayaran vendor internal
+	•	jurnal sederhana
+	•	laporan keuangan internal
+
+Fitur:
+	•	approval transaksi
+	•	upload bukti transaksi
+	•	dashboard cashflow
+	•	grafik pengeluaran bulanan
+	•	rekap per kategori
+	•	filter waktu
+	•	export laporan
+	•	audit log transaksi
+
+⸻
+
+7. Modul penilaian kinerja
+
+Buat fitur evaluasi pegawai:
+	•	target KPI
+	•	realisasi KPI
+	•	penilaian bulanan / triwulan / tahunan
+	•	evaluasi disiplin
+	•	evaluasi kehadiran
+	•	evaluasi produktivitas
+	•	rekomendasi promosi
+	•	ranking performa
+	•	catatan atasan
+
+UI:
+	•	progress bar KPI
+	•	scorecard
+	•	radar chart / bar chart performa
+	•	halaman review modern
+
+⸻
+
+8. Modul mutasi, promosi, dan demosi
+
+Fitur:
+	•	pengajuan mutasi
+	•	promosi jabatan
+	•	perubahan unit kerja
+	•	perubahan grade/golongan
+	•	histori jabatan
+	•	surat keputusan digital
+	•	approval workflow
+
+⸻
+
+9. Modul pelatihan dan pengembangan
+
+Fitur:
+	•	daftar pelatihan
+	•	jadwal training
+	•	peserta training
+	•	sertifikat
+	•	histori pelatihan pegawai
+	•	kebutuhan pelatihan berdasarkan divisi
+	•	evaluasi hasil pelatihan
+
+⸻
+
+10. Modul dokumen & arsip digital
+
+Fitur:
+	•	penyimpanan dokumen pegawai
+	•	kontrak kerja
+	•	SK pengangkatan
+	•	SK mutasi
+	•	surat peringatan
+	•	sertifikat
+	•	dokumen keuangan
+	•	filter per pegawai/divisi/kategori
+	•	preview dokumen
+	•	download/upload
+	•	audit trail
+
+⸻
+
+11. Modul manajemen pengguna & role
+
+Role yang harus ada:
+	•	Super Admin
+	•	Direktur
+	•	HRD
+	•	Keuangan
+	•	Kepala Bagian
+	•	Supervisor
+	•	Pegawai
+
+Hak akses berbasis role:
+	•	menu berbeda sesuai jabatan
+	•	approval berbeda sesuai level
+	•	data sensitif hanya untuk role tertentu
+
+⸻
+
+12. Modul notifikasi
+
+Sediakan notifikasi real-time untuk:
+	•	pengajuan cuti
+	•	approval absensi
+	•	payroll selesai
+	•	evaluasi kinerja
+	•	dokumen kadaluarsa
+	•	kontrak hampir habis
+	•	ulang tahun pegawai
+	•	masa pensiun mendekat
+
+⸻
+
+Struktur halaman yang harus dibuat
+
+Halaman login
+	•	modern glassmorphism atau corporate clean style
+	•	ilustrasi bertema air / utilitas / perusahaan daerah
+	•	login dengan email/NIP
+	•	password
+	•	lupa password
+	•	opsi login dengan OTP jika diperlukan
+
+Dashboard
+	•	sidebar kiri modern
+	•	topbar dengan search, notifikasi, profil user
+	•	cards statistik
+	•	chart
+	•	aktivitas terbaru
+	•	quick action buttons
+
+Halaman data pegawai
+	•	tabel modern dengan filter canggih
+	•	profile card saat klik data pegawai
+	•	tab detail: biodata, jabatan, dokumen, absensi, payroll, penilaian
+
+Halaman absensi
+	•	kalender
+	•	rekap
+	•	check-in/check-out panel
+	•	daftar keterlambatan
+	•	grafik hadir
+
+Halaman payroll
+	•	payroll summary
+	•	daftar slip gaji
+	•	detail komponen gaji
+	•	export
+
+Halaman keuangan
+	•	cashflow dashboard
+	•	daftar transaksi
+	•	kategori pengeluaran
+	•	grafik anggaran vs realisasi
+
+Halaman laporan
+	•	laporan absensi
+	•	laporan gaji
+	•	laporan cuti
+	•	laporan kinerja
+	•	laporan keuangan
+	•	export PDF/Excel
+
+⸻
+
+Detail UI/UX yang wajib
+
+Gunakan prinsip UI modern:
+	•	desain card-based
+	•	tabel dengan sticky header
+	•	search dan filter yang smooth
+	•	badge status berwarna elegan
+	•	modal form modern
+	•	empty state yang menarik
+	•	loading skeleton
+	•	pagination modern
+	•	dropdown dan datepicker modern
+	•	chart interaktif
+	•	avatar pegawai
+	•	breadcrumb
+	•	tabs dan accordions yang clean
+
+Hindari:
+	•	tabel full border tebal
+	•	warna kusam
+	•	font kuno
+	•	tombol kotak kaku
+	•	icon lawas
+	•	layout terlalu rapat
+	•	desain seperti sistem lama pemerintah
