@@ -2,9 +2,10 @@ import { db } from "./db";
 import {
   departments, positions, employees, attendance, leaveRequests,
   payroll, financeTransactions, performanceReviews, mutations,
-  trainings, documents, notifications
+  trainings, documents, notifications, users
 } from "@shared/schema";
 import { count } from "drizzle-orm";
+import { hashPassword } from "./auth";
 
 export async function seedDatabase() {
   const [existing] = await db.select({ count: count() }).from(employees);
@@ -170,6 +171,16 @@ export async function seedDatabase() {
     { title: "Pelatihan K3", message: "Pelatihan K3 akan dilaksanakan pada 20-21 Maret 2026", type: "training", link: "/trainings" },
     { title: "Evaluasi Kinerja Q4", message: "Periode penilaian kinerja Q4 2025 telah selesai", type: "performance", link: "/performance" },
     { title: "Pembayaran Listrik Pending", message: "Pembayaran listrik bulan Maret menunggu persetujuan", type: "finance", link: "/finance" },
+  ]);
+
+  const adminHash = await hashPassword("admin123");
+  const pegawaiHash = await hashPassword("pegawai123");
+
+  await db.insert(users).values([
+    { username: "admin", password: adminHash, role: "admin", employeeId: null },
+    { username: "ahmad.suryadi", password: pegawaiHash, role: "pegawai", employeeId: empData[0].id },
+    { username: "siti.rahayu", password: pegawaiHash, role: "pegawai", employeeId: empData[1].id },
+    { username: "bambang.purnomo", password: pegawaiHash, role: "pegawai", employeeId: empData[2].id },
   ]);
 
   console.log("Seed data inserted successfully");

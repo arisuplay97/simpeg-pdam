@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useTheme } from "@/lib/theme-provider";
+import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import type { Notification } from "@shared/schema";
 import {
   LayoutDashboard, Users, CalendarCheck, FileText, DollarSign,
   Wallet, BarChart3, ArrowLeftRight, GraduationCap, FolderOpen,
   Bell, ChevronLeft, ChevronRight, Sun, Moon, Search, Menu, X,
-  Droplets, ClipboardList, LogOut, Settings
+  ClipboardList, LogOut
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import logoImg from "@assets/27d50813-7865-448b-a7d3-4c81691cfe9c_1773141880415.jpeg";
 
 const menuItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -32,12 +32,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [location] = useLocation();
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
 
   const { data: notifications = [] } = useQuery<Notification[]>({
     queryKey: ["/api/notifications"],
   });
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
+  const displayName = user?.employee?.fullName || user?.username || "User";
+  const initials = displayName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
+  const roleLabel = user?.role === "admin" ? "Administrator" : "Pegawai";
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -60,8 +64,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         data-testid="sidebar"
       >
         <div className={`flex items-center h-16 px-4 border-b border-sidebar-border ${collapsed ? "justify-center" : "gap-3"}`}>
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-primary-foreground shrink-0">
-            <Droplets className="w-5 h-5" />
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white shrink-0 overflow-hidden p-0.5">
+            <img src={logoImg} alt="PDAM" className="w-full h-full object-contain" />
           </div>
           {!collapsed && (
             <div className="overflow-hidden">
@@ -150,13 +154,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               )}
             </button>
 
+            <button
+              onClick={logout}
+              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
+              title="Logout"
+              data-testid="btn-logout"
+            >
+              <LogOut className="w-[18px] h-[18px]" />
+            </button>
+
             <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-xs font-semibold text-primary">AD</span>
+                <span className="text-xs font-semibold text-primary">{initials}</span>
               </div>
               <div className="hidden md:block">
-                <p className="text-sm font-medium leading-tight">Admin</p>
-                <p className="text-[11px] text-muted-foreground leading-tight">Super Admin</p>
+                <p className="text-sm font-medium leading-tight">{displayName}</p>
+                <p className="text-[11px] text-muted-foreground leading-tight">{roleLabel}</p>
               </div>
             </div>
           </div>

@@ -1,11 +1,91 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { hashPassword, comparePassword, requireAuth } from "./auth";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username dan password harus diisi" });
+      }
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ message: "Username atau password salah" });
+      }
+      const valid = await comparePassword(password, user.password);
+      if (!valid) {
+        return res.status(401).json({ message: "Username atau password salah" });
+      }
+      req.session.userId = user.id;
+      req.session.role = user.role;
+      req.session.employeeId = user.employeeId;
+
+      let employee = null;
+      if (user.employeeId) {
+        employee = await storage.getEmployee(user.employeeId);
+      }
+
+      res.json({
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        employeeId: user.employeeId,
+        employee,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) return res.status(500).json({ message: "Gagal logout" });
+      res.clearCookie("connect.sid");
+      res.json({ success: true });
+    });
+  });
+
+  app.get("/api/auth/me", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const user = await storage.getUserById(req.session.userId);
+    if (!user) {
+      return res.status(401).json({ message: "User not found" });
+    }
+    let employee = null;
+    if (user.employeeId) {
+      employee = await storage.getEmployee(user.employeeId);
+    }
+    res.json({
+      id: user.id,
+      username: user.username,
+      role: user.role,
+      employeeId: user.employeeId,
+      employee,
+    });
+  });
+
+  app.use("/api/dashboard", requireAuth);
+  app.use("/api/departments", requireAuth);
+  app.use("/api/positions", requireAuth);
+  app.use("/api/employees", requireAuth);
+  app.use("/api/attendance", requireAuth);
+  app.use("/api/leave-requests", requireAuth);
+  app.use("/api/payroll", requireAuth);
+  app.use("/api/finance", requireAuth);
+  app.use("/api/performance", requireAuth);
+  app.use("/api/mutations", requireAuth);
+  app.use("/api/trainings", requireAuth);
+  app.use("/api/documents", requireAuth);
+  app.use("/api/notifications", requireAuth);
+
   app.get("/api/dashboard/stats", async (_req, res) => {
     const stats = await storage.getDashboardStats();
     res.json(stats);

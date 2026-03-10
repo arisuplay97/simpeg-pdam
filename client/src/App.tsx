@@ -1,10 +1,12 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/lib/theme-provider";
+import { AuthProvider, useAuth } from "@/lib/auth";
 import AppLayout from "@/components/layout/app-layout";
+import LoginPage from "@/pages/login";
 import Dashboard from "@/pages/dashboard";
 import Employees from "@/pages/employees";
 import EmployeeDetail from "@/pages/employee-detail";
@@ -18,8 +20,9 @@ import TrainingsPage from "@/pages/trainings";
 import DocumentsPage from "@/pages/documents";
 import ReportsPage from "@/pages/reports";
 import NotFound from "@/pages/not-found";
+import { Loader2 } from "lucide-react";
 
-function Router() {
+function AuthenticatedRoutes() {
   return (
     <AppLayout>
       <Switch>
@@ -41,13 +44,52 @@ function Router() {
   );
 }
 
+function AppRouter() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Memuat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <Switch>
+        <Route path="/login" component={LoginPage} />
+        <Route>
+          <Redirect to="/login" />
+        </Route>
+      </Switch>
+    );
+  }
+
+  return (
+    <Switch>
+      <Route path="/login">
+        <Redirect to="/" />
+      </Route>
+      <Route>
+        <AuthenticatedRoutes />
+      </Route>
+    </Switch>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <Toaster />
-          <Router />
+          <AuthProvider>
+            <Toaster />
+            <AppRouter />
+          </AuthProvider>
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>

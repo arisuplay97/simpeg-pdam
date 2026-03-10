@@ -16,6 +16,22 @@ import {
 } from "@shared/schema";
 
 export const storage = {
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  },
+  async getUserById(id: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  },
+  async createUser(data: InsertUser & { password: string }): Promise<User> {
+    const [result] = await db.insert(users).values(data).returning();
+    return result;
+  },
+  async getUsers(): Promise<User[]> {
+    return db.select().from(users);
+  },
+
   async getDepartments(): Promise<Department[]> {
     return db.select().from(departments).orderBy(departments.name);
   },
