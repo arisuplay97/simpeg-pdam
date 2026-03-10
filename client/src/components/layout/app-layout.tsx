@@ -8,10 +8,9 @@ import {
   LayoutDashboard, Users, CalendarCheck, FileText, DollarSign,
   Wallet, BarChart3, ArrowLeftRight, GraduationCap, FolderOpen,
   Bell, ChevronLeft, ChevronRight, Sun, Moon, Search, Menu, X,
-  ClipboardList, LogOut
+  ClipboardList, LogOut, Droplets
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import logoImg from "@assets/27d50813-7865-448b-a7d3-4c81691cfe9c_1773141880415.jpeg";
 
 const menuItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -64,8 +63,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         data-testid="sidebar"
       >
         <div className={`flex items-center h-16 px-4 border-b border-sidebar-border ${collapsed ? "justify-center" : "gap-3"}`}>
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-white shrink-0 overflow-hidden p-0.5">
-            <img src={logoImg} alt="PDAM" className="w-full h-full object-contain" />
+          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-primary-foreground shrink-0">
+            <Droplets className="w-5 h-5" />
           </div>
           {!collapsed && (
             <div className="overflow-hidden">

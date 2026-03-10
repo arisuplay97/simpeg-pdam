@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
-import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
-import logoPath from "@assets/27d50813-7865-448b-a7d3-4c81691cfe9c_1773141880415.jpeg";
+import { Eye, EyeOff, LogIn, Loader2, Droplets } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -44,7 +43,7 @@ export default function LoginPage() {
 
         <div className="relative z-10 flex flex-col items-center justify-center w-full px-12 text-white">
           <div className="w-32 h-32 mb-8 bg-white/20 backdrop-blur-sm rounded-3xl p-4 flex items-center justify-center shadow-2xl">
-            <img src={logoPath} alt="Logo PDAM" className="w-full h-full object-contain" />
+            <Droplets className="w-20 h-20" />
           </div>
           <h1 className="text-4xl font-bold mb-3 text-center">PDAM Tirta Ardhia Rinjani</h1>
           <p className="text-lg text-blue-100 text-center max-w-md mb-8">
@@ -70,8 +69,8 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex flex-col items-center mb-8">
-            <div className="w-20 h-20 mb-4 bg-primary/10 rounded-2xl p-3 flex items-center justify-center border border-primary/20">
-              <img src={logoPath} alt="Logo PDAM" className="w-full h-full object-contain" />
+            <div className="w-20 h-20 mb-4 bg-primary/10 rounded-2xl p-5 flex items-center justify-center border border-primary/20">
+              <Droplets className="w-full h-full text-primary" />
             </div>
             <h1 className="text-xl font-bold text-foreground">PDAM Tirta Ardhia Rinjani</h1>
             <p className="text-sm text-muted-foreground">Sistem Informasi Kepegawaian</p>
@@ -156,12 +155,12 @@ export default function LoginPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setUsername("ahmad.suryadi"); setPassword("pegawai123"); setError(""); }}
+                  onClick={() => { setUsername("doni.alga"); setPassword("pegawai123"); setError(""); }}
                   className="text-xs px-3 py-2 bg-muted/50 hover:bg-muted border border-border rounded-lg transition-colors text-center"
                   data-testid="btn-demo-pegawai"
                 >
                   <div className="font-semibold text-foreground">Pegawai</div>
-                  <div className="text-muted-foreground">ahmad.suryadi</div>
+                  <div className="text-muted-foreground">doni.alga</div>
                 </button>
               </div>
             </div>

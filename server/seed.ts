@@ -178,7 +178,7 @@ export async function seedDatabase() {
 
   await db.insert(users).values([
     { username: "admin", password: adminHash, role: "admin", employeeId: null },
-    { username: "ahmad.suryadi", password: pegawaiHash, role: "pegawai", employeeId: empData[0].id },
+    { username: "doni.alga", password: pegawaiHash, role: "pegawai", employeeId: empData[0].id },
     { username: "siti.rahayu", password: pegawaiHash, role: "pegawai", employeeId: empData[1].id },
     { username: "bambang.purnomo", password: pegawaiHash, role: "pegawai", employeeId: empData[2].id },
   ]);
