@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Employee, Notification, Attendance, LeaveRequest } from "@shared/schema";
+import type { Employee, Notification, Attendance, LeaveRequest, RankPromotion, SalaryIncrease } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAuth } from "@/lib/auth";
+import { Link } from "wouter";
 import {
   Users, UserCheck, UserCog, Clock, AlertTriangle, FileText,
-  Calendar, DollarSign, TrendingUp, Bell, Activity
+  Calendar, DollarSign, TrendingUp, Bell, Activity, Shield, ArrowRight
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -36,6 +38,7 @@ function StatCard({ title, value, icon: Icon, color, subtitle }: {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth();
   const { data: stats, isLoading: statsLoading } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
   });
@@ -55,6 +58,18 @@ export default function Dashboard() {
   const { data: leaveRequests = [] } = useQuery<LeaveRequest[]>({
     queryKey: ["/api/leave-requests"],
   });
+
+  const { data: rankPromotions = [] } = useQuery<RankPromotion[]>({
+    queryKey: ["/api/rank-promotions"],
+  });
+
+  const { data: salaryIncreases = [] } = useQuery<SalaryIncrease[]>({
+    queryKey: ["/api/salary-increases"],
+  });
+
+  const pendingPromotions = rankPromotions.filter(rp => !["approved", "rejected"].includes(rp.status));
+  const pendingSalaryIncreases = salaryIncreases.filter(si => !["approved", "rejected"].includes(si.status));
+  const awaitingDirApproval = rankPromotions.filter(rp => rp.status === "approval_direktur");
 
   const deptDistribution = employees.reduce((acc: any[], emp) => {
     const dept = emp.departmentId || 0;
@@ -125,8 +140,8 @@ export default function Dashboard() {
         <StatCard title="Hadir Hari Ini" value={stats?.todayAttendance || 0} icon={Clock} color="bg-cyan-600" subtitle="Sudah check-in" />
         <StatCard title="Terlambat" value={stats?.lateToday || 0} icon={AlertTriangle} color="bg-orange-500" subtitle="Hari ini" />
         <StatCard title="Cuti Aktif" value={stats?.activeLeave || 0} icon={Calendar} color="bg-purple-500" subtitle="Sedang cuti" />
-        <StatCard title="Menunggu Approval" value={stats?.pendingLeave || 0} icon={FileText} color="bg-rose-500" subtitle="Pengajuan baru" />
-        <StatCard title="Pegawai" value={employees.length} icon={TrendingUp} color="bg-teal-600" subtitle="Terdaftar" />
+        <StatCard title="Menunggu Approval" value={stats?.pendingLeave || 0} icon={FileText} color="bg-rose-500" subtitle="Pengajuan cuti" />
+        <StatCard title="Kenaikan Pangkat" value={pendingPromotions.length} icon={Shield} color="bg-indigo-600" subtitle="Menunggu proses" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -286,6 +301,63 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {(user?.role === "direktur" || user?.role === "admin") && (awaitingDirApproval.length > 0 || pendingSalaryIncreases.length > 0) && (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Shield className="w-4 h-4 text-primary" />
+              Menunggu Approval
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {awaitingDirApproval.map((rp) => {
+                const emp = employees.find(e => e.id === rp.employeeId);
+                return (
+                  <div key={`rp-${rp.id}`} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50" data-testid={`approval-rp-${rp.id}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+                        <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{emp?.fullName || "—"}</p>
+                        <p className="text-xs text-muted-foreground">Kenaikan Pangkat: {rp.fromGrade} → {rp.toGrade}</p>
+                      </div>
+                    </div>
+                    <Link href="/rank-promotions">
+                      <button className="flex items-center gap-1 text-xs text-primary hover:underline" data-testid={`link-approve-rp-${rp.id}`}>
+                        Proses <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </Link>
+                  </div>
+                );
+              })}
+              {pendingSalaryIncreases.map((si) => {
+                const emp = employees.find(e => e.id === si.employeeId);
+                return (
+                  <div key={`si-${si.id}`} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50" data-testid={`approval-si-${si.id}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                        <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{emp?.fullName || "—"}</p>
+                        <p className="text-xs text-muted-foreground">Kenaikan Gaji: Rp {Number(si.fromSalary).toLocaleString('id-ID')} → Rp {Number(si.toSalary).toLocaleString('id-ID')}</p>
+                      </div>
+                    </div>
+                    <Link href="/salary-increases">
+                      <button className="flex items-center gap-1 text-xs text-primary hover:underline" data-testid={`link-approve-si-${si.id}`}>
+                        Proses <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </Link>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

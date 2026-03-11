@@ -19,6 +19,8 @@ import MutationsPage from "@/pages/mutations";
 import TrainingsPage from "@/pages/trainings";
 import DocumentsPage from "@/pages/documents";
 import ReportsPage from "@/pages/reports";
+import RankPromotionsPage from "@/pages/rank-promotions";
+import SalaryIncreasesPage from "@/pages/salary-increases";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -38,6 +40,8 @@ function AuthenticatedRoutes() {
         <Route path="/trainings" component={TrainingsPage} />
         <Route path="/documents" component={DocumentsPage} />
         <Route path="/reports" component={ReportsPage} />
+        <Route path="/rank-promotions" component={RankPromotionsPage} />
+        <Route path="/salary-increases" component={SalaryIncreasesPage} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

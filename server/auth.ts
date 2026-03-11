@@ -34,3 +34,13 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
   next();
 }
+
+export function requireDirektur(req: Request, res: Response, next: NextFunction) {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  if (req.session.role !== "direktur" && req.session.role !== "admin") {
+    return res.status(403).json({ message: "Forbidden - Direktur access required" });
+  }
+  next();
+}

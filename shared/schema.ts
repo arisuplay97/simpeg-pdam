@@ -42,6 +42,9 @@ export const employees = pgTable("employees", {
   bankName: text("bank_name"),
   maritalStatus: text("marital_status"),
   photoUrl: text("photo_url"),
+  lastPromotionDate: date("last_promotion_date"),
+  lastSalaryIncreaseDate: date("last_salary_increase_date"),
+  probationEndDate: date("probation_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -182,6 +185,47 @@ export const users = pgTable("users", {
   employeeId: integer("employee_id").references(() => employees.id),
 });
 
+export const rankPromotions = pgTable("rank_promotions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  employeeId: integer("employee_id").references(() => employees.id).notNull(),
+  fromGrade: text("from_grade").notNull(),
+  toGrade: text("to_grade").notNull(),
+  scheduledDate: date("scheduled_date").notNull(),
+  promotionDate: date("promotion_date"),
+  status: text("status").notNull().default("diajukan"),
+  rejectionReason: text("rejection_reason"),
+  skNumber: text("sk_number"),
+  approvedBy: text("approved_by"),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const salaryIncreases = pgTable("salary_increases", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  employeeId: integer("employee_id").references(() => employees.id).notNull(),
+  fromSalary: decimal("from_salary", { precision: 12, scale: 2 }).notNull(),
+  toSalary: decimal("to_salary", { precision: 12, scale: 2 }).notNull(),
+  increasePercentage: decimal("increase_percentage", { precision: 5, scale: 2 }).notNull(),
+  effectiveDate: date("effective_date").notNull(),
+  scheduledDate: date("scheduled_date").notNull(),
+  status: text("status").notNull().default("pending"),
+  performanceScore: integer("performance_score"),
+  rejectionReason: text("rejection_reason"),
+  approvedBy: text("approved_by"),
+  approvedAt: timestamp("approved_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const approvalLogs = pgTable("approval_logs", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  entityType: text("entity_type").notNull(),
+  entityId: integer("entity_id").notNull(),
+  action: text("action").notNull(),
+  performedBy: text("performed_by").notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertDepartmentSchema = createInsertSchema(departments).omit({ id: true });
 export const insertPositionSchema = createInsertSchema(positions).omit({ id: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
@@ -195,6 +239,9 @@ export const insertTrainingSchema = createInsertSchema(trainings).omit({ id: tru
 export const insertDocumentSchema = createInsertSchema(documents).omit({ id: true, createdAt: true });
 export const insertNotificationSchema = createInsertSchema(notifications).omit({ id: true, createdAt: true });
 export const insertUserSchema = createInsertSchema(users).pick({ username: true, password: true, role: true, employeeId: true });
+export const insertRankPromotionSchema = createInsertSchema(rankPromotions).omit({ id: true, createdAt: true, approvedAt: true });
+export const insertSalaryIncreaseSchema = createInsertSchema(salaryIncreases).omit({ id: true, createdAt: true, approvedAt: true });
+export const insertApprovalLogSchema = createInsertSchema(approvalLogs).omit({ id: true, createdAt: true });
 
 export type Department = typeof departments.$inferSelect;
 export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
@@ -222,3 +269,9 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type RankPromotion = typeof rankPromotions.$inferSelect;
+export type InsertRankPromotion = z.infer<typeof insertRankPromotionSchema>;
+export type SalaryIncrease = typeof salaryIncreases.$inferSelect;
+export type InsertSalaryIncrease = z.infer<typeof insertSalaryIncreaseSchema>;
+export type ApprovalLog = typeof approvalLogs.$inferSelect;
+export type InsertApprovalLog = z.infer<typeof insertApprovalLogSchema>;

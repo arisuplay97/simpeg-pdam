@@ -1,18 +1,21 @@
-import { eq, desc, sql, and, gte, lte, like, count } from "drizzle-orm";
+import { eq, desc, sql, and, gte, lte, like, count, isNull, or } from "drizzle-orm";
 import { db } from "./db";
 import {
   departments, positions, employees, attendance, leaveRequests,
   payroll, financeTransactions, performanceReviews, mutations,
   trainings, documents, notifications, users,
+  rankPromotions, salaryIncreases, approvalLogs,
   type InsertDepartment, type InsertPosition, type InsertEmployee,
   type InsertAttendance, type InsertLeaveRequest, type InsertPayroll,
   type InsertFinanceTransaction, type InsertPerformanceReview,
   type InsertMutation, type InsertTraining, type InsertDocument,
   type InsertNotification, type InsertUser,
+  type InsertRankPromotion, type InsertSalaryIncrease, type InsertApprovalLog,
   type Department, type Position, type Employee, type Attendance,
   type LeaveRequest, type Payroll, type FinanceTransaction,
   type PerformanceReview, type Mutation, type Training, type Document,
   type Notification, type User,
+  type RankPromotion, type SalaryIncrease, type ApprovalLog,
 } from "@shared/schema";
 
 export const storage = {
@@ -186,17 +189,91 @@ export const storage = {
     await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, id));
   },
 
-  async getUser(id: string): Promise<User | undefined> {
-    const [result] = await db.select().from(users).where(eq(users.id, id));
+  async getRankPromotions(): Promise<RankPromotion[]> {
+    return db.select().from(rankPromotions).orderBy(desc(rankPromotions.createdAt));
+  },
+  async getRankPromotionsByEmployee(employeeId: number): Promise<RankPromotion[]> {
+    return db.select().from(rankPromotions).where(eq(rankPromotions.employeeId, employeeId)).orderBy(desc(rankPromotions.createdAt));
+  },
+  async createRankPromotion(data: InsertRankPromotion): Promise<RankPromotion> {
+    const [result] = await db.insert(rankPromotions).values(data).returning();
     return result;
   },
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [result] = await db.select().from(users).where(eq(users.username, username));
+  async updateRankPromotion(id: number, data: Partial<InsertRankPromotion>): Promise<RankPromotion> {
+    const [result] = await db.update(rankPromotions).set(data).where(eq(rankPromotions.id, id)).returning();
     return result;
   },
-  async createUser(data: InsertUser): Promise<User> {
-    const [result] = await db.insert(users).values(data).returning();
+
+  async getSalaryIncreases(): Promise<SalaryIncrease[]> {
+    return db.select().from(salaryIncreases).orderBy(desc(salaryIncreases.createdAt));
+  },
+  async getSalaryIncreasesByEmployee(employeeId: number): Promise<SalaryIncrease[]> {
+    return db.select().from(salaryIncreases).where(eq(salaryIncreases.employeeId, employeeId)).orderBy(desc(salaryIncreases.createdAt));
+  },
+  async createSalaryIncrease(data: InsertSalaryIncrease): Promise<SalaryIncrease> {
+    const [result] = await db.insert(salaryIncreases).values(data).returning();
     return result;
+  },
+  async updateSalaryIncrease(id: number, data: Partial<InsertSalaryIncrease>): Promise<SalaryIncrease> {
+    const [result] = await db.update(salaryIncreases).set(data).where(eq(salaryIncreases.id, id)).returning();
+    return result;
+  },
+
+  async getApprovalLogs(entityType?: string, entityId?: number): Promise<ApprovalLog[]> {
+    if (entityType && entityId) {
+      return db.select().from(approvalLogs)
+        .where(and(eq(approvalLogs.entityType, entityType), eq(approvalLogs.entityId, entityId)))
+        .orderBy(desc(approvalLogs.createdAt));
+    }
+    return db.select().from(approvalLogs).orderBy(desc(approvalLogs.createdAt)).limit(200);
+  },
+  async createApprovalLog(data: InsertApprovalLog): Promise<ApprovalLog> {
+    const [result] = await db.insert(approvalLogs).values(data).returning();
+    return result;
+  },
+
+  async getEligibleForPromotion(): Promise<Employee[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setFullYear(cutoffDate.getFullYear() - 4);
+    cutoffDate.setMonth(cutoffDate.getMonth() + 3);
+    const cutoff = cutoffDate.toISOString().split('T')[0];
+
+    return db.select().from(employees)
+      .where(
+        and(
+          eq(employees.status, "aktif"),
+          or(
+            and(
+              isNull(employees.lastPromotionDate),
+              lte(employees.joinDate, cutoff)
+            ),
+            lte(employees.lastPromotionDate, cutoff)
+          )
+        )
+      )
+      .orderBy(employees.fullName);
+  },
+
+  async getEligibleForSalaryIncrease(): Promise<Employee[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setFullYear(cutoffDate.getFullYear() - 2);
+    cutoffDate.setMonth(cutoffDate.getMonth() + 3);
+    const cutoff = cutoffDate.toISOString().split('T')[0];
+
+    return db.select().from(employees)
+      .where(
+        and(
+          eq(employees.status, "aktif"),
+          or(
+            and(
+              isNull(employees.lastSalaryIncreaseDate),
+              lte(employees.joinDate, cutoff)
+            ),
+            lte(employees.lastSalaryIncreaseDate, cutoff)
+          )
+        )
+      )
+      .orderBy(employees.fullName);
   },
 
   async getDashboardStats() {
@@ -209,6 +286,18 @@ export const storage = {
     const [lateToday] = await db.select({ count: count() }).from(attendance).where(and(eq(attendance.date, today), sql`${attendance.lateMinutes} > 0`));
     const [pendingLeave] = await db.select({ count: count() }).from(leaveRequests).where(eq(leaveRequests.status, "pending"));
     const [activeLeave] = await db.select({ count: count() }).from(leaveRequests).where(eq(leaveRequests.status, "approved"));
+    const [pendingPromotions] = await db.select({ count: count() }).from(rankPromotions).where(
+      and(
+        sql`${rankPromotions.status} != 'approved'`,
+        sql`${rankPromotions.status} != 'rejected'`
+      )
+    );
+    const [pendingSalaryIncreases] = await db.select({ count: count() }).from(salaryIncreases).where(
+      and(
+        sql`${salaryIncreases.status} != 'approved'`,
+        sql`${salaryIncreases.status} != 'rejected'`
+      )
+    );
 
     return {
       totalEmployees: totalEmployees.count,
@@ -218,6 +307,8 @@ export const storage = {
       lateToday: lateToday.count,
       pendingLeave: pendingLeave.count,
       activeLeave: activeLeave.count,
+      pendingPromotions: pendingPromotions.count,
+      pendingSalaryIncreases: pendingSalaryIncreases.count,
     };
   },
 };

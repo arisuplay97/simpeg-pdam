@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { hashPassword, comparePassword, requireAuth } from "./auth";
+import { hashPassword, comparePassword, requireAuth, requireDirektur } from "./auth";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -85,6 +85,11 @@ export async function registerRoutes(
   app.use("/api/trainings", requireAuth);
   app.use("/api/documents", requireAuth);
   app.use("/api/notifications", requireAuth);
+  app.use("/api/rank-promotions", requireAuth);
+  app.use("/api/salary-increases", requireAuth);
+  app.use("/api/approval-logs", requireAuth);
+  app.use("/api/eligible-promotions", requireAuth);
+  app.use("/api/eligible-salary-increases", requireAuth);
 
   app.get("/api/dashboard/stats", async (_req, res) => {
     const stats = await storage.getDashboardStats();
@@ -258,6 +263,200 @@ export async function registerRoutes(
   app.put("/api/notifications/:id/read", async (req, res) => {
     await storage.markNotificationRead(parseInt(req.params.id));
     res.json({ success: true });
+  });
+
+  app.get("/api/rank-promotions", async (_req, res) => {
+    const data = await storage.getRankPromotions();
+    res.json(data);
+  });
+  app.get("/api/rank-promotions/employee/:id", async (req, res) => {
+    const data = await storage.getRankPromotionsByEmployee(parseInt(req.params.id));
+    res.json(data);
+  });
+  app.post("/api/rank-promotions", async (req, res) => {
+    try {
+      const data = await storage.createRankPromotion(req.body);
+      await storage.createApprovalLog({
+        entityType: "rank_promotion",
+        entityId: data.id,
+        action: "submit",
+        performedBy: req.session.userId || "system",
+        notes: "Pengajuan kenaikan pangkat dibuat",
+      });
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app.put("/api/rank-promotions/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getRankPromotions();
+      const current = existing.find(rp => rp.id === id);
+      if (!current) return res.status(404).json({ message: "Not found" });
+
+      const validTransitions: Record<string, string[]> = {
+        diajukan: ["review_hrd", "rejected"],
+        review_hrd: ["review_kabag", "rejected"],
+        review_kabag: ["approval_direktur", "rejected"],
+        approval_direktur: ["rejected"],
+      };
+
+      if (req.body.status) {
+        if (req.body.status === "approved") {
+          return res.status(403).json({ message: "Gunakan endpoint /approve untuk menyetujui" });
+        }
+        const allowed = validTransitions[current.status] || [];
+        if (!allowed.includes(req.body.status)) {
+          return res.status(400).json({ message: `Transisi status dari ${current.status} ke ${req.body.status} tidak valid` });
+        }
+      }
+
+      const data = await storage.updateRankPromotion(id, req.body);
+      if (req.body.status) {
+        const action = req.body.status === "rejected" ? "reject" : "review";
+        await storage.createApprovalLog({
+          entityType: "rank_promotion",
+          entityId: id,
+          action,
+          performedBy: req.session.userId || "system",
+          notes: req.body.rejectionReason || `Status diubah ke ${req.body.status}`,
+        });
+      }
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app.put("/api/rank-promotions/:id/approve", requireDirektur, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const data = await storage.updateRankPromotion(id, {
+        status: "approved",
+        approvedBy: req.session.userId,
+        approvedAt: new Date(),
+        promotionDate: new Date().toISOString().split('T')[0],
+      } as any);
+      await storage.createApprovalLog({
+        entityType: "rank_promotion",
+        entityId: id,
+        action: "approve",
+        performedBy: req.session.userId || "system",
+        notes: req.body.notes || "Disetujui oleh Direktur",
+      });
+      if (data.employeeId) {
+        await storage.updateEmployee(data.employeeId, {
+          grade: data.toGrade,
+          lastPromotionDate: new Date().toISOString().split('T')[0],
+        });
+      }
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/salary-increases", async (_req, res) => {
+    const data = await storage.getSalaryIncreases();
+    res.json(data);
+  });
+  app.get("/api/salary-increases/employee/:id", async (req, res) => {
+    const data = await storage.getSalaryIncreasesByEmployee(parseInt(req.params.id));
+    res.json(data);
+  });
+  app.post("/api/salary-increases", async (req, res) => {
+    try {
+      const data = await storage.createSalaryIncrease(req.body);
+      await storage.createApprovalLog({
+        entityType: "salary_increase",
+        entityId: data.id,
+        action: "submit",
+        performedBy: req.session.userId || "system",
+        notes: "Pengajuan kenaikan gaji dibuat",
+      });
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app.put("/api/salary-increases/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const existing = await storage.getSalaryIncreases();
+      const current = existing.find(si => si.id === id);
+      if (!current) return res.status(404).json({ message: "Not found" });
+
+      if (req.body.status) {
+        if (req.body.status === "approved") {
+          return res.status(403).json({ message: "Gunakan endpoint /approve untuk menyetujui" });
+        }
+        const validTransitions: Record<string, string[]> = {
+          pending: ["review", "rejected"],
+          review: ["rejected"],
+        };
+        const allowed = validTransitions[current.status] || [];
+        if (!allowed.includes(req.body.status)) {
+          return res.status(400).json({ message: `Transisi status dari ${current.status} ke ${req.body.status} tidak valid` });
+        }
+      }
+
+      const data = await storage.updateSalaryIncrease(id, req.body);
+      if (req.body.status) {
+        const action = req.body.status === "rejected" ? "reject" : "review";
+        await storage.createApprovalLog({
+          entityType: "salary_increase",
+          entityId: id,
+          action,
+          performedBy: req.session.userId || "system",
+          notes: req.body.rejectionReason || `Status diubah ke ${req.body.status}`,
+        });
+      }
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app.put("/api/salary-increases/:id/approve", requireDirektur, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const data = await storage.updateSalaryIncrease(id, {
+        status: "approved",
+        approvedBy: req.session.userId,
+        approvedAt: new Date(),
+      } as any);
+      await storage.createApprovalLog({
+        entityType: "salary_increase",
+        entityId: id,
+        action: "approve",
+        performedBy: req.session.userId || "system",
+        notes: req.body.notes || "Disetujui oleh Direktur",
+      });
+      if (data.employeeId) {
+        await storage.updateEmployee(data.employeeId, {
+          lastSalaryIncreaseDate: new Date().toISOString().split('T')[0],
+        });
+      }
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/approval-logs", async (req, res) => {
+    const entityType = typeof req.query.entityType === "string" ? req.query.entityType : undefined;
+    const entityId = typeof req.query.entityId === "string" ? parseInt(req.query.entityId) : undefined;
+    const data = await storage.getApprovalLogs(entityType, entityId);
+    res.json(data);
+  });
+
+  app.get("/api/eligible-promotions", async (_req, res) => {
+    const data = await storage.getEligibleForPromotion();
+    res.json(data);
+  });
+
+  app.get("/api/eligible-salary-increases", async (_req, res) => {
+    const data = await storage.getEligibleForSalaryIncrease();
+    res.json(data);
   });
 
   return httpServer;

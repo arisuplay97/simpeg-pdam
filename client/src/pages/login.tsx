@@ -143,7 +143,7 @@ export default function LoginPage() {
 
             <div className="mt-6 pt-6 border-t border-border">
               <p className="text-xs text-muted-foreground text-center mb-3">Akun Demo:</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => { setUsername("admin"); setPassword("admin123"); setError(""); }}
@@ -151,7 +151,16 @@ export default function LoginPage() {
                   data-testid="btn-demo-admin"
                 >
                   <div className="font-semibold text-foreground">Admin</div>
-                  <div className="text-muted-foreground">admin / admin123</div>
+                  <div className="text-muted-foreground">admin123</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setUsername("direktur"); setPassword("direktur123"); setError(""); }}
+                  className="text-xs px-3 py-2 bg-muted/50 hover:bg-muted border border-border rounded-lg transition-colors text-center"
+                  data-testid="btn-demo-direktur"
+                >
+                  <div className="font-semibold text-foreground">Direktur</div>
+                  <div className="text-muted-foreground">direktur123</div>
                 </button>
                 <button
                   type="button"
@@ -160,7 +169,7 @@ export default function LoginPage() {
                   data-testid="btn-demo-pegawai"
                 >
                   <div className="font-semibold text-foreground">Pegawai</div>
-                  <div className="text-muted-foreground">doni.alga</div>
+                  <div className="text-muted-foreground">pegawai123</div>
                 </button>
               </div>
             </div>

@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, CalendarCheck, FileText, DollarSign,
   Wallet, BarChart3, ArrowLeftRight, GraduationCap, FolderOpen,
   Bell, ChevronLeft, ChevronRight, Sun, Moon, Search, Menu, X,
-  ClipboardList, LogOut, Droplets
+  ClipboardList, LogOut, Droplets, Shield, TrendingUp
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -21,6 +21,8 @@ const menuItems = [
   { path: "/finance", label: "Keuangan", icon: Wallet },
   { path: "/performance", label: "Kinerja", icon: BarChart3 },
   { path: "/mutations", label: "Mutasi & Promosi", icon: ArrowLeftRight },
+  { path: "/rank-promotions", label: "Kenaikan Pangkat", icon: Shield },
+  { path: "/salary-increases", label: "Kenaikan Gaji", icon: TrendingUp },
   { path: "/trainings", label: "Pelatihan", icon: GraduationCap },
   { path: "/documents", label: "Dokumen", icon: FolderOpen },
   { path: "/reports", label: "Laporan", icon: ClipboardList },
@@ -40,7 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const displayName = user?.employee?.fullName || user?.username || "User";
   const initials = displayName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
-  const roleLabel = user?.role === "admin" ? "Administrator" : "Pegawai";
+  const roleLabel = user?.role === "admin" ? "Administrator" : user?.role === "direktur" ? "Direktur Utama" : "Pegawai";
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
