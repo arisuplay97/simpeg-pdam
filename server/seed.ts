@@ -8,7 +8,38 @@ import {
 import { count, eq } from "drizzle-orm";
 import { hashPassword } from "./auth";
 
+async function ensureUsersExist() {
+  const adminHash = await hashPassword("admin123");
+  const pegawaiHash = await hashPassword("pegawai123");
+  const direkturHash = await hashPassword("direktur123");
+
+  const allEmployees = await db.select().from(employees);
+  const direkturEmp = allEmployees.find(e => e.fullName.includes("Doni Alga"));
+  const ahmadEmp = allEmployees.find(e => e.fullName.includes("Ahmad Suryadi"));
+  const sitiEmp = allEmployees.find(e => e.fullName.includes("Siti Rahayu"));
+  const bambangEmp = allEmployees.find(e => e.fullName.includes("Bambang Purnomo"));
+
+  const userValues: any[] = [
+    { username: "admin", password: adminHash, role: "admin", employeeId: null },
+  ];
+  if (direkturEmp) userValues.push({ username: "direktur", password: direkturHash, role: "direktur", employeeId: direkturEmp.id });
+  if (ahmadEmp) userValues.push({ username: "ahmad.suryadi", password: pegawaiHash, role: "pegawai", employeeId: ahmadEmp.id });
+  if (sitiEmp) userValues.push({ username: "siti.rahayu", password: pegawaiHash, role: "pegawai", employeeId: sitiEmp.id });
+  if (bambangEmp) userValues.push({ username: "bambang.purnomo", password: pegawaiHash, role: "pegawai", employeeId: bambangEmp.id });
+
+  const doniEmp = allEmployees.find(e => e.nip === "PDAM-001");
+  if (doniEmp) userValues.push({ username: "doni.alga", password: pegawaiHash, role: "pegawai", employeeId: doniEmp.id });
+
+  await db.insert(users).values(userValues);
+  console.log("User accounts created successfully");
+}
+
 export async function seedDatabase() {
+  const [existingUsers] = await db.select({ count: count() }).from(users);
+  if (existingUsers.count === 0) {
+    await ensureUsersExist();
+  }
+
   const [existing] = await db.select({ count: count() }).from(employees);
   if (existing.count > 0) return;
 
