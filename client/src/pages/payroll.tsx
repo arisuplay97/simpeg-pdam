@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, TrendingUp, TrendingDown, Wallet, Search, ChevronDown, ChevronRight, Plus, Trash2, X, FileText, Download } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Wallet, Search, ChevronDown, ChevronRight, Plus, Trash2, X, FileText, Download, Pencil } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -22,6 +22,7 @@ function DeductionRow({ payrollItem, employees, positions, departments }: { payr
   const [expanded, setExpanded] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showSlip, setShowSlip] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [newDesc, setNewDesc] = useState("");
@@ -126,6 +127,15 @@ function DeductionRow({ payrollItem, employees, positions, departments }: { payr
           <td colSpan={7} className="px-5 py-0">
             <div className="bg-muted/20 border border-border rounded-lg p-5 my-2">
               <div className="flex justify-end gap-2 mb-3">
+                {isAdmin && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowEdit(true); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors"
+                    data-testid={`btn-edit-payroll-${payrollItem.id}`}
+                  >
+                    <Pencil className="w-3.5 h-3.5" /> Edit
+                  </button>
+                )}
                 {isAdmin && (
                   <button
                     onClick={(e) => {
@@ -261,7 +271,173 @@ function DeductionRow({ payrollItem, employees, positions, departments }: { payr
           onClose={() => setShowSlip(false)}
         />
       )}
+      {showEdit && (
+        <EditPayrollDialog
+          payrollItem={payrollItem}
+          onClose={() => setShowEdit(false)}
+        />
+      )}
     </>
+  );
+}
+
+function EditPayrollDialog({
+  payrollItem,
+  onClose,
+}: {
+  payrollItem: Payroll;
+  onClose: () => void;
+}) {
+  const [period, setPeriod] = useState(payrollItem.period);
+  const [basicSalary, setBasicSalary] = useState(String(Number(payrollItem.basicSalary)));
+  const [positionAllowance, setPositionAllowance] = useState(String(Number(payrollItem.positionAllowance)));
+  const [familyAllowance, setFamilyAllowance] = useState(String(Number(payrollItem.familyAllowance)));
+  const [transportAllowance, setTransportAllowance] = useState(String(Number(payrollItem.transportAllowance)));
+  const [mealAllowance, setMealAllowance] = useState(String(Number(payrollItem.mealAllowance)));
+  const [overtime, setOvertime] = useState(String(Number(payrollItem.overtime)));
+  const [incentive, setIncentive] = useState(String(Number(payrollItem.incentive)));
+  const [status, setStatus] = useState(payrollItem.status);
+  const { toast } = useToast();
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("PUT", `/api/payroll/${payrollItem.id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payroll"] });
+      toast({ title: "Berhasil", description: "Data penggajian berhasil diperbarui" });
+      onClose();
+    },
+    onError: (err: any) => {
+      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = () => {
+    const basic = Number(basicSalary);
+    const posAllow = Number(positionAllowance);
+    const famAllow = Number(familyAllowance);
+    const transAllow = Number(transportAllowance);
+    const mealAllow = Number(mealAllowance);
+    const ot = Number(overtime);
+    const inc = Number(incentive);
+    const totalEarnings = basic + posAllow + famAllow + transAllow + mealAllow + ot + inc;
+
+    const bpjsKes = Math.round(basic * 0.01 * 100) / 100;
+    const bpjsTk = Math.round(basic * 0.02 * 100) / 100;
+    const pension = Math.round(basic * 0.01 * 100) / 100;
+    const pph21 = Math.round(basic * 0.05 * 100) / 100;
+    const totalDeductions = bpjsKes + bpjsTk + pension + pph21;
+    const netSalary = totalEarnings - totalDeductions;
+
+    updateMutation.mutate({
+      period,
+      basicSalary: String(basic),
+      positionAllowance: String(posAllow),
+      familyAllowance: String(famAllow),
+      transportAllowance: String(transAllow),
+      mealAllowance: String(mealAllow),
+      overtime: String(ot),
+      incentive: String(inc),
+      bpjsKesehatanDeduction: String(bpjsKes),
+      bpjsKetenagakerjaanDeduction: String(bpjsTk),
+      pensionDeduction: String(pension),
+      pph21Deduction: String(pph21),
+      totalEarnings: String(totalEarnings),
+      totalDeductions: String(totalDeductions),
+      netSalary: String(netSalary),
+      status,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+        data-testid="dialog-edit-payroll"
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold">Edit Penggajian</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" data-testid="btn-close-edit-payroll">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Periode (YYYY-MM)</label>
+              <Input value={period} onChange={e => setPeriod(e.target.value)} data-testid="input-edit-period" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Status</label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger data-testid="select-edit-status"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Draft</SelectItem>
+                  <SelectItem value="final">Final</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Gaji Pokok</label>
+              <Input type="number" value={basicSalary} onChange={e => setBasicSalary(e.target.value)} data-testid="input-edit-basic" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tunj. Jabatan</label>
+              <Input type="number" value={positionAllowance} onChange={e => setPositionAllowance(e.target.value)} data-testid="input-edit-position-allowance" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tunj. Keluarga</label>
+              <Input type="number" value={familyAllowance} onChange={e => setFamilyAllowance(e.target.value)} data-testid="input-edit-family-allowance" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tunj. Transport</label>
+              <Input type="number" value={transportAllowance} onChange={e => setTransportAllowance(e.target.value)} data-testid="input-edit-transport" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tunj. Makan</label>
+              <Input type="number" value={mealAllowance} onChange={e => setMealAllowance(e.target.value)} data-testid="input-edit-meal" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Lembur</label>
+              <Input type="number" value={overtime} onChange={e => setOvertime(e.target.value)} data-testid="input-edit-overtime" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Insentif</label>
+            <Input type="number" value={incentive} onChange={e => setIncentive(e.target.value)} data-testid="input-edit-incentive" />
+          </div>
+
+          <p className="text-[11px] text-muted-foreground italic">Potongan BPJS Kes (1%), BPJS TK (2%), Iuran Pensiun (1%), PPh21 (5%) dihitung ulang otomatis dari Gaji Pokok.</p>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 h-10 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors" data-testid="btn-cancel-edit-payroll">
+            Batal
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={updateMutation.isPending}
+            className="flex-1 h-10 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 transition-colors disabled:opacity-50"
+            data-testid="btn-submit-edit-payroll"
+          >
+            {updateMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
