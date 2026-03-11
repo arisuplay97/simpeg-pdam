@@ -186,6 +186,14 @@ export async function registerRoutes(
     const data = await storage.updatePayroll(parseInt(req.params.id), req.body);
     res.json(data);
   });
+  app.delete("/api/payroll/:id", requireDirektur, async (req, res) => {
+    try {
+      await storage.deletePayroll(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   app.get("/api/payroll/:id/deductions", async (req, res) => {
     const data = await storage.getPayrollDeductions(parseInt(req.params.id));

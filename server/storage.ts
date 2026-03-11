@@ -137,6 +137,10 @@ export const storage = {
     const [result] = await db.insert(payrollDeductions).values(data).returning();
     return result;
   },
+  async deletePayroll(id: number): Promise<void> {
+    await db.delete(payrollDeductions).where(eq(payrollDeductions.payrollId, id));
+    await db.delete(payroll).where(eq(payroll.id, id));
+  },
   async deletePayrollDeduction(id: number): Promise<void> {
     await db.delete(payrollDeductions).where(eq(payrollDeductions.id, id));
   },

@@ -29,6 +29,21 @@ function DeductionRow({ payrollItem, employees, positions, departments }: { payr
   const isAdmin = user?.role === "admin" || user?.role === "direktur";
   const canViewSlip = isAdmin || user?.employeeId === payrollItem.employeeId;
 
+  const { toast } = useToast();
+
+  const deletePayroll = useMutation({
+    mutationFn: async () => {
+      await apiRequest("DELETE", `/api/payroll/${payrollItem.id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payroll"] });
+      toast({ title: "Berhasil", description: "Data penggajian berhasil dihapus" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+    },
+  });
+
   const emp = employees.find(e => e.id === payrollItem.employeeId);
   const totalAllowance = Number(payrollItem.positionAllowance) + Number(payrollItem.familyAllowance) + Number(payrollItem.transportAllowance) + Number(payrollItem.mealAllowance);
 
@@ -110,8 +125,23 @@ function DeductionRow({ payrollItem, employees, positions, departments }: { payr
         <tr data-testid={`payroll-detail-${payrollItem.id}`}>
           <td colSpan={7} className="px-5 py-0">
             <div className="bg-muted/20 border border-border rounded-lg p-5 my-2">
-              {canViewSlip && (
-                <div className="flex justify-end mb-3">
+              <div className="flex justify-end gap-2 mb-3">
+                {isAdmin && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm("Yakin ingin menghapus data penggajian ini?")) {
+                        deletePayroll.mutate();
+                      }
+                    }}
+                    disabled={deletePayroll.isPending}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                    data-testid={`btn-delete-payroll-${payrollItem.id}`}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> {deletePayroll.isPending ? "Menghapus..." : "Hapus"}
+                  </button>
+                )}
+                {canViewSlip && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowSlip(true); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
@@ -119,8 +149,8 @@ function DeductionRow({ payrollItem, employees, positions, departments }: { payr
                   >
                     <FileText className="w-3.5 h-3.5" /> Lihat Slip Gaji
                   </button>
-                </div>
-              )}
+                )}
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-sm font-semibold text-emerald-600 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -232,6 +262,178 @@ function DeductionRow({ payrollItem, employees, positions, departments }: { payr
         />
       )}
     </>
+  );
+}
+
+function AddPayrollDialog({
+  open,
+  onClose,
+  employees,
+}: {
+  open: boolean;
+  onClose: () => void;
+  employees: Employee[];
+}) {
+  const [empId, setEmpId] = useState("");
+  const [period, setPeriod] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`);
+  const [basicSalary, setBasicSalary] = useState("");
+  const [positionAllowance, setPositionAllowance] = useState("0");
+  const [familyAllowance, setFamilyAllowance] = useState("0");
+  const [transportAllowance, setTransportAllowance] = useState("500000");
+  const [mealAllowance, setMealAllowance] = useState("300000");
+  const [overtime, setOvertime] = useState("0");
+  const [incentive, setIncentive] = useState("0");
+  const { toast } = useToast();
+
+  const createMutation = useMutation({
+    mutationFn: async (data: any) => {
+      await apiRequest("POST", "/api/payroll", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/payroll"] });
+      toast({ title: "Berhasil", description: "Data penggajian berhasil ditambahkan" });
+      onClose();
+    },
+    onError: (err: any) => {
+      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = () => {
+    if (!empId || !basicSalary) {
+      toast({ title: "Error", description: "Pegawai dan Gaji Pokok wajib diisi", variant: "destructive" });
+      return;
+    }
+    const basic = Number(basicSalary);
+    const posAllow = Number(positionAllowance);
+    const famAllow = Number(familyAllowance);
+    const transAllow = Number(transportAllowance);
+    const mealAllow = Number(mealAllowance);
+    const ot = Number(overtime);
+    const inc = Number(incentive);
+    const totalEarnings = basic + posAllow + famAllow + transAllow + mealAllow + ot + inc;
+
+    const bpjsKes = Math.round(basic * 0.01 * 100) / 100;
+    const bpjsTk = Math.round(basic * 0.02 * 100) / 100;
+    const pension = Math.round(basic * 0.01 * 100) / 100;
+    const pph21 = Math.round(basic * 0.05 * 100) / 100;
+    const totalDeductions = bpjsKes + bpjsTk + pension + pph21;
+    const netSalary = totalEarnings - totalDeductions;
+
+    createMutation.mutate({
+      employeeId: parseInt(empId),
+      period,
+      basicSalary: String(basic),
+      positionAllowance: String(posAllow),
+      familyAllowance: String(famAllow),
+      transportAllowance: String(transAllow),
+      mealAllowance: String(mealAllow),
+      overtime: String(ot),
+      incentive: String(inc),
+      bpjsKesehatanDeduction: String(bpjsKes),
+      bpjsKetenagakerjaanDeduction: String(bpjsTk),
+      pensionDeduction: String(pension),
+      pph21Deduction: String(pph21),
+      loanDeduction: "0",
+      cooperativeDeduction: "0",
+      disciplineDeduction: "0",
+      totalEarnings: String(totalEarnings),
+      totalDeductions: String(totalDeductions),
+      netSalary: String(netSalary),
+      status: "draft",
+    });
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto"
+        onClick={e => e.stopPropagation()}
+        data-testid="dialog-add-payroll"
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold">Tambah Penggajian</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" data-testid="btn-close-add-payroll">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Pegawai</label>
+            <Select value={empId} onValueChange={setEmpId}>
+              <SelectTrigger data-testid="select-payroll-employee"><SelectValue placeholder="Pilih Pegawai" /></SelectTrigger>
+              <SelectContent>
+                {employees.map(e => (
+                  <SelectItem key={e.id} value={String(e.id)}>{e.nip} - {e.fullName}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Periode (YYYY-MM)</label>
+            <Input value={period} onChange={e => setPeriod(e.target.value)} placeholder="2026-03" data-testid="input-payroll-period" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Gaji Pokok</label>
+              <Input type="number" value={basicSalary} onChange={e => setBasicSalary(e.target.value)} placeholder="5000000" data-testid="input-payroll-basic" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tunj. Jabatan</label>
+              <Input type="number" value={positionAllowance} onChange={e => setPositionAllowance(e.target.value)} data-testid="input-payroll-position-allowance" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tunj. Keluarga</label>
+              <Input type="number" value={familyAllowance} onChange={e => setFamilyAllowance(e.target.value)} data-testid="input-payroll-family-allowance" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tunj. Transport</label>
+              <Input type="number" value={transportAllowance} onChange={e => setTransportAllowance(e.target.value)} data-testid="input-payroll-transport" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tunj. Makan</label>
+              <Input type="number" value={mealAllowance} onChange={e => setMealAllowance(e.target.value)} data-testid="input-payroll-meal" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Lembur</label>
+              <Input type="number" value={overtime} onChange={e => setOvertime(e.target.value)} data-testid="input-payroll-overtime" />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Insentif</label>
+            <Input type="number" value={incentive} onChange={e => setIncentive(e.target.value)} data-testid="input-payroll-incentive" />
+          </div>
+
+          <p className="text-[11px] text-muted-foreground italic">Potongan BPJS Kes (1%), BPJS TK (2%), Iuran Pensiun (1%), PPh21 (5%) dihitung otomatis dari Gaji Pokok.</p>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 h-10 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors" data-testid="btn-cancel-add-payroll">
+            Batal
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={createMutation.isPending}
+            className="flex-1 h-10 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+            data-testid="btn-submit-payroll"
+          >
+            {createMutation.isPending ? "Menyimpan..." : "Simpan"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -516,8 +718,10 @@ function ExportExcelDialog({
 export default function PayrollPage() {
   const [search, setSearch] = useState("");
   const [showExport, setShowExport] = useState(false);
+  const [showAddPayroll, setShowAddPayroll] = useState(false);
   const { user } = useAuth();
-  const canExport = user?.role === "admin" || user?.role === "direktur";
+  const isAdmin = user?.role === "admin" || user?.role === "direktur";
+  const canExport = isAdmin;
 
   const { data: payrollData = [], isLoading } = useQuery<Payroll[]>({
     queryKey: ["/api/payroll"],
@@ -567,16 +771,28 @@ export default function PayrollPage() {
           <h1 className="text-2xl font-bold tracking-tight" data-testid="text-page-title">Penggajian</h1>
           <p className="text-sm text-muted-foreground mt-1">Kelola slip gaji dan komponen penggajian pegawai — klik baris untuk melihat rincian</p>
         </div>
-        {canExport && (
-          <button
-            onClick={() => setShowExport(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
-            data-testid="btn-export-excel"
-          >
-            <Download className="w-4 h-4" />
-            Export Excel
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <button
+              onClick={() => setShowAddPayroll(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors shadow-sm"
+              data-testid="btn-add-payroll"
+            >
+              <Plus className="w-4 h-4" />
+              Tambah
+            </button>
+          )}
+          {canExport && (
+            <button
+              onClick={() => setShowExport(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
+              data-testid="btn-export-excel"
+            >
+              <Download className="w-4 h-4" />
+              Export Excel
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -662,6 +878,14 @@ export default function PayrollPage() {
           employees={employees}
           positions={positions}
           departments={departments}
+        />
+      )}
+
+      {isAdmin && (
+        <AddPayrollDialog
+          open={showAddPayroll}
+          onClose={() => setShowAddPayroll(false)}
+          employees={employees}
         />
       )}
     </div>
