@@ -24,7 +24,7 @@ const menuItems = [
   { path: "/mutations", label: "Mutasi & Promosi", icon: ArrowLeftRight },
   { path: "/rank-promotions", label: "Kenaikan Pangkat", icon: Shield },
   { path: "/salary-increases", label: "Kenaikan Gaji", icon: TrendingUp },
-  { path: "/retirement", label: "Daftar Pensiun", icon: Clock },
+  { path: "/retirement", label: "Pensiun & Kontrak", icon: Clock },
   { path: "/trainings", label: "Pelatihan", icon: GraduationCap },
   { path: "/documents", label: "Dokumen", icon: FolderOpen },
   { path: "/reports", label: "Laporan", icon: ClipboardList },

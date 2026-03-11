@@ -233,7 +233,7 @@ function AddEmployeeForm({ departments, onSubmit, isPending }: { departments: De
     address: "", phone: "", email: "", religion: "Islam", education: "",
     departmentId: "", positionId: "", status: "aktif", employeeType: "tetap",
     grade: "", joinDate: "", npwp: "", bpjs: "", bankAccount: "", bankName: "",
-    maritalStatus: "Lajang",
+    maritalStatus: "Lajang", contractEndDate: "",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -310,6 +310,12 @@ function AddEmployeeForm({ departments, onSubmit, isPending }: { departments: De
           <label className="text-sm font-medium mb-1.5 block">Tanggal Masuk</label>
           <Input type="date" value={form.joinDate} onChange={e => setForm({...form, joinDate: e.target.value})} required className={inputClass} data-testid="input-join-date" />
         </div>
+        {form.employeeType === "kontrak" && (
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Tanggal Berakhir Kontrak</label>
+            <Input type="date" value={form.contractEndDate} onChange={e => setForm({...form, contractEndDate: e.target.value})} className={inputClass} data-testid="input-contract-end-date" />
+          </div>
+        )}
         <div>
           <label className="text-sm font-medium mb-1.5 block">Pendidikan</label>
           <Input value={form.education} onChange={e => setForm({...form, education: e.target.value})} className={inputClass} data-testid="input-education" />

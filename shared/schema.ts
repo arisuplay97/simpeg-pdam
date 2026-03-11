@@ -45,6 +45,7 @@ export const employees = pgTable("employees", {
   lastPromotionDate: date("last_promotion_date"),
   lastSalaryIncreaseDate: date("last_salary_increase_date"),
   probationEndDate: date("probation_end_date"),
+  contractEndDate: date("contract_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

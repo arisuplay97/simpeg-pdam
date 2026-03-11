@@ -108,7 +108,12 @@ export default function EmployeeDetail() {
         </CardContent>
       </Card>
 
-      {employee.birthDate && <RetirementCard birthDate={employee.birthDate} joinDate={employee.joinDate} />}
+      {employee.employeeType === "tetap" && employee.birthDate && (
+        <RetirementCard birthDate={employee.birthDate} joinDate={employee.joinDate} />
+      )}
+      {employee.employeeType === "kontrak" && (
+        <ContractCard contractEndDate={employee.contractEndDate} joinDate={employee.joinDate} />
+      )}
 
       <Tabs defaultValue="attendance" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
@@ -271,6 +276,95 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
       <Progress value={value} className="flex-1 h-2" />
       <span className="text-xs font-medium w-8 text-right">{value}</span>
     </div>
+  );
+}
+
+function ContractCard({ contractEndDate, joinDate }: { contractEndDate?: string | null; joinDate?: string | null }) {
+  const now = new Date();
+  const join = joinDate ? new Date(joinDate) : null;
+
+  if (!contractEndDate) {
+    return (
+      <Card className="border-2 border-amber-500/50" data-testid="card-contract-info">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Clock className="w-4 h-4 text-amber-500" />
+            Info Kontrak
+            <Badge className="bg-amber-500 text-white text-[10px]">Kontrak</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">Tanggal berakhir kontrak belum diatur.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const endDate = new Date(contractEndDate);
+  const isExpired = now >= endDate;
+  const remainMs = endDate.getTime() - now.getTime();
+  const remainDaysTotal = Math.max(0, Math.ceil(remainMs / (24 * 60 * 60 * 1000)));
+  const remainYears = Math.floor(remainDaysTotal / 365);
+  const remainMonths = Math.floor((remainDaysTotal % 365) / 30);
+  const remainDays = remainDaysTotal % 30;
+
+  const totalContractMs = join ? endDate.getTime() - join.getTime() : 0;
+  const elapsedMs = join ? now.getTime() - join.getTime() : 0;
+  const progressPct = totalContractMs > 0 ? Math.min(100, Math.max(0, (elapsedMs / totalContractMs) * 100)) : 0;
+
+  const isUrgent = remainDaysTotal <= 90;
+  const isSoon = remainDaysTotal <= 365;
+  const borderColor = isExpired ? "border-red-500/50" : isUrgent ? "border-red-500/50" : isSoon ? "border-amber-500/50" : "border-border";
+
+  return (
+    <Card className={`border-2 ${borderColor}`} data-testid="card-contract-info">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Clock className="w-4 h-4 text-amber-500" />
+          Info Kontrak
+          <Badge className="bg-amber-500 text-white text-[10px]">Kontrak</Badge>
+          {isExpired && <Badge variant="destructive" className="text-[10px]">Kontrak Berakhir</Badge>}
+          {!isExpired && isUrgent && <Badge variant="destructive" className="text-[10px]">Segera Berakhir</Badge>}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-5">
+          {join && (
+            <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+              <p className="text-[11px] text-muted-foreground font-medium mb-1">Tanggal Mulai Kontrak</p>
+              <p className="text-sm font-semibold" data-testid="text-contract-start">
+                {join.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+              </p>
+            </div>
+          )}
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+            <p className="text-[11px] text-muted-foreground font-medium mb-1">Tanggal Berakhir Kontrak</p>
+            <p className="text-sm font-semibold" data-testid="text-contract-end">
+              {endDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+          <div className={`p-3 rounded-lg border ${isExpired ? "bg-red-500/10 border-red-500/30" : isUrgent ? "bg-red-500/10 border-red-500/30" : isSoon ? "bg-amber-500/10 border-amber-500/30" : "bg-muted/30 border-border/50"}`}>
+            <p className="text-[11px] text-muted-foreground font-medium mb-1">Sisa Masa Kontrak</p>
+            <p className={`text-sm font-semibold ${isExpired ? "text-red-600 dark:text-red-400" : isUrgent ? "text-red-600 dark:text-red-400" : isSoon ? "text-amber-600 dark:text-amber-400" : ""}`} data-testid="text-contract-countdown">
+              {isExpired ? "Kontrak sudah berakhir" : remainYears > 0 ? `${remainYears} tahun ${remainMonths} bulan ${remainDays} hari lagi` : remainMonths > 0 ? `${remainMonths} bulan ${remainDays} hari lagi` : `${remainDays} hari lagi`}
+            </p>
+          </div>
+        </div>
+        {join && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground">Progress Masa Kontrak</p>
+              <p className="text-xs font-medium">{progressPct.toFixed(1)}%</p>
+            </div>
+            <Progress value={progressPct} className="h-2.5" />
+            <div className="flex justify-between mt-1.5">
+              <p className="text-[10px] text-muted-foreground">Mulai: {join.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}</p>
+              <p className="text-[10px] text-muted-foreground">Berakhir: {endDate.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}</p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
