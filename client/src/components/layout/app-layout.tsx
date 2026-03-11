@@ -42,7 +42,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const displayName = user?.employee?.fullName || user?.username || "User";
   const initials = displayName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
-  const roleLabel = user?.role === "admin" ? "Administrator" : user?.role === "direktur" ? "Direktur Utama" : "Pegawai";
+  const roleLabel = user?.role === "superadmin" ? "Super Admin" : user?.role === "admin" ? "Administrator" : user?.role === "direktur" ? "Direktur Utama" : "Pegawai";
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

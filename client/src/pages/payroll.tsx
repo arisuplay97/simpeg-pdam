@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Payroll, Employee, PayrollDeduction, Position, Department } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,7 +28,7 @@ function DeductionRow({ payrollItem, employees, positions, departments }: { payr
   const [newAmount, setNewAmount] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "direktur";
+  const isAdmin = user?.role === "admin" || user?.role === "direktur" || user?.role === "superadmin";
   const canViewSlip = isAdmin || user?.employeeId === payrollItem.employeeId;
 
   const { toast } = useToast();
@@ -350,7 +351,7 @@ function EditPayrollDialog({
     });
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
         className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6 max-h-[90vh] overflow-y-auto"
@@ -437,7 +438,8 @@ function EditPayrollDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -896,7 +898,7 @@ export default function PayrollPage() {
   const [showExport, setShowExport] = useState(false);
   const [showAddPayroll, setShowAddPayroll] = useState(false);
   const { user } = useAuth();
-  const isAdmin = user?.role === "admin" || user?.role === "direktur";
+  const isAdmin = user?.role === "admin" || user?.role === "direktur" || user?.role === "superadmin";
   const canExport = isAdmin;
 
   const { data: payrollData = [], isLoading } = useQuery<Payroll[]>({

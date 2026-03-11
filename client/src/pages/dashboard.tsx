@@ -302,7 +302,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {(user?.role === "direktur" || user?.role === "admin") && (awaitingDirApproval.length > 0 || pendingSalaryIncreases.length > 0) && (
+      {(user?.role === "direktur" || user?.role === "admin" || user?.role === "superadmin") && (awaitingDirApproval.length > 0 || pendingSalaryIncreases.length > 0) && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">

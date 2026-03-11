@@ -112,8 +112,8 @@ export default function SalaryIncreasesPage() {
     ? salaryIncreases
     : salaryIncreases.filter(s => s.status === statusFilter);
 
-  const canApprove = user?.role === "direktur";
-  const canReview = user?.role === "admin" || user?.role === "direktur";
+  const canApprove = user?.role === "direktur" || user?.role === "superadmin";
+  const canReview = user?.role === "admin" || user?.role === "direktur" || user?.role === "superadmin";
 
   if (isLoading) {
     return (

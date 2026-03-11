@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Search, Plus, Users, UserCheck, UserCog, Filter, ChevronRight, Mail, Phone } from "lucide-react";
+import { Search, Plus, Users, UserCheck, UserCog, Filter, ChevronRight, Mail, Phone, Trash2 } from "lucide-react";
+import { useAuth } from "@/lib/auth";
 
 export default function Employees() {
   const [search, setSearch] = useState("");
@@ -19,6 +20,21 @@ export default function Employees() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "superadmin";
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/employees/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      toast({ title: "Berhasil", description: "Data pegawai berhasil dihapus" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+    },
+  });
 
   const { data: employees = [], isLoading } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
@@ -178,6 +194,21 @@ export default function Employees() {
                   <Badge variant={emp.status === "aktif" ? "default" : "secondary"} className="text-[11px] shrink-0">
                     {emp.status}
                   </Badge>
+                  {isSuperAdmin && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (confirm(`Yakin ingin menghapus data pegawai "${emp.fullName}"? Data terkait (absensi, payroll, dll) juga akan terdampak.`)) {
+                          deleteMutation.mutate(emp.id);
+                        }
+                      }}
+                      className="p-1.5 rounded-md bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors shrink-0"
+                      data-testid={`btn-delete-employee-${emp.id}`}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
               </Link>

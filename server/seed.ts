@@ -19,7 +19,9 @@ async function ensureUsersExist() {
   const sitiEmp = allEmployees.find(e => e.fullName.includes("Siti Rahayu"));
   const bambangEmp = allEmployees.find(e => e.fullName.includes("Bambang Purnomo"));
 
+  const superAdminHash = await hashPassword("superadmin123");
   const userValues: any[] = [
+    { username: "superadmin", password: superAdminHash, role: "superadmin", employeeId: null },
     { username: "admin", password: adminHash, role: "admin", employeeId: null },
     { username: "direktur", password: direkturHash, role: "direktur", employeeId: direkturEmp?.id || null },
   ];
@@ -46,6 +48,12 @@ export async function seedDatabase() {
       const direkturEmp = allEmps.find(e => e.fullName.includes("Doni Alga"));
       await db.insert(users).values({ username: "direktur", password: direkturHash, role: "direktur", employeeId: direkturEmp?.id || null });
       console.log("Direktur account created");
+    }
+    const superadminUser = await db.select().from(users).where(eq(users.username, "superadmin"));
+    if (superadminUser.length === 0) {
+      const superAdminHash = await hashPassword("superadmin123");
+      await db.insert(users).values({ username: "superadmin", password: superAdminHash, role: "superadmin", employeeId: null });
+      console.log("Super Admin account created");
     }
   }
 

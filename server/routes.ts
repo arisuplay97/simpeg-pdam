@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { hashPassword, comparePassword, requireAuth, requireDirektur } from "./auth";
+import { hashPassword, comparePassword, requireAuth, requireDirektur, requireSuperAdmin } from "./auth";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -131,9 +131,18 @@ export async function registerRoutes(
     const data = await storage.updateEmployee(parseInt(req.params.id), req.body);
     res.json(data);
   });
-  app.delete("/api/employees/:id", async (req, res) => {
-    await storage.deleteEmployee(parseInt(req.params.id));
-    res.json({ success: true });
+  app.delete("/api/employees/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      const empId = parseInt(req.params.id);
+      const relatedUsers = await storage.getUserByEmployeeId(empId);
+      if (relatedUsers) {
+        await storage.deleteUser(relatedUsers.id);
+      }
+      await storage.deleteEmployee(empId);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   });
 
   app.get("/api/attendance", async (req, res) => {

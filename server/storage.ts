@@ -32,6 +32,13 @@ export const storage = {
     const [result] = await db.insert(users).values(data).returning();
     return result;
   },
+  async getUserByEmployeeId(employeeId: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.employeeId, employeeId));
+    return user;
+  },
+  async deleteUser(id: any): Promise<void> {
+    await db.delete(users).where(eq(users.id, id));
+  },
   async getUsers(): Promise<User[]> {
     return db.select().from(users);
   },

@@ -130,10 +130,10 @@ export default function RankPromotionsPage() {
   const canAdvance = (status: string) => {
     if (!user) return false;
     const role = user.role;
-    if (status === "diajukan" && (role === "admin" || role === "direktur")) return true;
-    if (status === "review_hrd" && (role === "admin" || role === "direktur")) return true;
-    if (status === "review_kabag" && (role === "admin" || role === "direktur")) return true;
-    if (status === "approval_direktur" && (role === "direktur" || role === "admin")) return true;
+    if (status === "diajukan" && (role === "admin" || role === "direktur" || role === "superadmin")) return true;
+    if (status === "review_hrd" && (role === "admin" || role === "direktur" || role === "superadmin")) return true;
+    if (status === "review_kabag" && (role === "admin" || role === "direktur" || role === "superadmin")) return true;
+    if (status === "approval_direktur" && (role === "direktur" || role === "admin" || role === "superadmin")) return true;
     return false;
   };
 

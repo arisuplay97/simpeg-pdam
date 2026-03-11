@@ -102,7 +102,16 @@ export default function LoginPage() {
 
             <div className="mt-6 pt-6 border-t border-border">
               <p className="text-xs text-muted-foreground text-center mb-3">Akun Demo:</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setUsername("superadmin"); setPassword("superadmin123"); setError(""); }}
+                  className="text-xs px-3 py-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 rounded-lg transition-colors text-center"
+                  data-testid="btn-demo-superadmin"
+                >
+                  <div className="font-semibold text-foreground">Super Admin</div>
+                  <div className="text-muted-foreground">superadmin123</div>
+                </button>
                 <button
                   type="button"
                   onClick={() => { setUsername("admin"); setPassword("admin123"); setError(""); }}
