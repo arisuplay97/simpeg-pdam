@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
 import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
-import logoPath from "@assets/Logo_Tirta_1773201248263.png";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -33,41 +32,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900">
-      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-sky-600 via-blue-600 to-cyan-700" />
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-72 h-72 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-20 right-20 w-96 h-96 bg-cyan-300 rounded-full blur-3xl" />
-          <div className="absolute top-1/2 left-1/3 w-48 h-48 bg-blue-300 rounded-full blur-2xl" />
-        </div>
-
-        <div className="relative z-10 flex flex-col items-center justify-center w-full px-12 text-white">
-          <div className="w-40 h-40 mb-8 bg-white/20 backdrop-blur-sm rounded-3xl p-4 flex items-center justify-center shadow-2xl">
-            <img src={logoPath} alt="PDAM Tirta Ardhia Rinjani" className="w-32 h-32 object-contain" />
-          </div>
-          <h1 className="text-4xl font-bold mb-3 text-center">PDAM Tirta Ardhia Rinjani</h1>
-          <p className="text-lg text-blue-100 text-center max-w-md mb-8">
-            Sistem Informasi Kepegawaian & Manajemen Operasional Internal
-          </p>
-          <div className="mt-4">
-            <div className="text-center">
-              <div className="text-3xl font-bold">350+</div>
-              <div className="text-sm text-blue-200">Pegawai</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 flex items-center justify-center px-4 py-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 dark:from-gray-950 dark:via-gray-900 dark:to-slate-900 px-4 py-8">
         <div className="w-full max-w-md">
-          <div className="lg:hidden flex flex-col items-center mb-8">
-            <div className="w-20 h-20 mb-4 bg-primary/10 rounded-2xl p-3 flex items-center justify-center border border-primary/20">
-              <img src={logoPath} alt="PDAM Tirta Ardhia Rinjani" className="w-full h-full object-contain" />
-            </div>
-            <h1 className="text-xl font-bold text-foreground">PDAM Tirta Ardhia Rinjani</h1>
-            <p className="text-sm text-muted-foreground">Sistem Informasi Kepegawaian</p>
-          </div>
 
           <div className="bg-card border border-border rounded-2xl shadow-xl p-8">
             <div className="mb-6">
@@ -172,7 +138,6 @@ export default function LoginPage() {
             &copy; 2026 PDAM Tirta Ardhia Rinjani. All rights reserved.
           </p>
         </div>
-      </div>
     </div>
   );
 }
