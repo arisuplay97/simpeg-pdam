@@ -92,6 +92,49 @@ export async function registerRoutes(
   app.use("/api/eligible-promotions", requireAuth);
   app.use("/api/eligible-salary-increases", requireAuth);
 
+  app.use("/api/users", requireAuth);
+  app.get("/api/users/employee/:id", async (req, res) => {
+    const user = await storage.getUserByEmployeeId(parseInt(req.params.id));
+    if (user) {
+      res.json({ exists: true, username: user.username, role: user.role, id: user.id });
+    } else {
+      res.json({ exists: false });
+    }
+  });
+  app.post("/api/users", requireSuperAdmin, async (req, res) => {
+    try {
+      const { username, password, role, employeeId } = req.body;
+      if (!username || !password || !role) {
+        return res.status(400).json({ message: "Username, password, dan role wajib diisi" });
+      }
+      if (!["admin", "pegawai"].includes(role)) {
+        return res.status(400).json({ message: "Role harus admin atau pegawai" });
+      }
+      const existing = await storage.getUserByUsername(username);
+      if (existing) {
+        return res.status(400).json({ message: "Username sudah digunakan" });
+      }
+      const hashedPassword = await hashPassword(password);
+      const user = await storage.createUser({
+        username,
+        password: hashedPassword,
+        role,
+        employeeId: employeeId || null,
+      });
+      res.json({ success: true, username: user.username, role: user.role });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+  app.delete("/api/users/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deleteUser(req.params.id);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/dashboard/stats", async (_req, res) => {
     const stats = await storage.getDashboardStats();
     res.json(stats);

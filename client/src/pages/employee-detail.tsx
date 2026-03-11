@@ -1,17 +1,30 @@
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import type { Employee, Department, Attendance, Payroll, PerformanceReview, LeaveRequest } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Building2, GraduationCap, CreditCard, Heart, Clock, AlertTriangle } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Building2, GraduationCap, CreditCard, Heart, Clock, AlertTriangle, Pencil, UserPlus, Key, Trash2 } from "lucide-react";
 
 export default function EmployeeDetail() {
   const [, params] = useRoute("/employees/:id");
   const employeeId = params?.id ? parseInt(params.id) : 0;
+  const [showEdit, setShowEdit] = useState(false);
+  const [showCreateUser, setShowCreateUser] = useState(false);
+  const { user: currentUser } = useAuth();
+  const { toast } = useToast();
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "superadmin";
+  const isSuperAdmin = currentUser?.role === "superadmin";
 
   const { data: employee, isLoading } = useQuery<Employee>({
     queryKey: ["/api/employees", employeeId],
@@ -40,6 +53,11 @@ export default function EmployeeDetail() {
   const { data: leaveData = [] } = useQuery<LeaveRequest[]>({
     queryKey: ["/api/leave-requests/employee", employeeId],
     enabled: employeeId > 0,
+  });
+
+  const { data: userAccount } = useQuery<{ exists: boolean; username?: string; role?: string; id?: string }>({
+    queryKey: ["/api/users/employee", employeeId],
+    enabled: employeeId > 0 && isSuperAdmin,
   });
 
   if (isLoading || !employee) {
@@ -71,15 +89,29 @@ export default function EmployeeDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Link href="/employees">
-          <Button variant="ghost" size="icon" className="shrink-0" data-testid="btn-back">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight" data-testid="text-employee-name">{employee.fullName}</h1>
-          <p className="text-sm text-muted-foreground">{employee.nip} · {dept?.name || "—"}</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href="/employees">
+            <Button variant="ghost" size="icon" className="shrink-0" data-testid="btn-back">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight" data-testid="text-employee-name">{employee.fullName}</h1>
+            <p className="text-sm text-muted-foreground">{employee.nip} · {dept?.name || "—"}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Button variant="outline" className="gap-2" onClick={() => setShowEdit(true)} data-testid="btn-edit-employee">
+              <Pencil className="w-4 h-4" /> Edit
+            </Button>
+          )}
+          {isSuperAdmin && (
+            <Button variant="outline" className="gap-2" onClick={() => setShowCreateUser(true)} data-testid="btn-manage-account">
+              <Key className="w-4 h-4" /> Akun Login
+            </Button>
+          )}
         </div>
       </div>
 
@@ -243,7 +275,355 @@ export default function EmployeeDetail() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {isAdmin && (
+        <EditEmployeeDialog
+          employee={employee}
+          departments={departments}
+          open={showEdit}
+          onOpenChange={setShowEdit}
+        />
+      )}
+
+      {isSuperAdmin && (
+        <UserAccountDialog
+          employeeId={employeeId}
+          employeeName={employee.fullName}
+          userAccount={userAccount}
+          open={showCreateUser}
+          onOpenChange={setShowCreateUser}
+        />
+      )}
     </div>
+  );
+}
+
+function EditEmployeeDialog({ employee, departments, open, onOpenChange }: {
+  employee: Employee;
+  departments: Department[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const [form, setForm] = useState({
+    fullName: employee.fullName,
+    gender: employee.gender,
+    birthPlace: employee.birthPlace || "",
+    birthDate: employee.birthDate || "",
+    address: employee.address || "",
+    phone: employee.phone || "",
+    email: employee.email || "",
+    religion: employee.religion || "",
+    education: employee.education || "",
+    departmentId: employee.departmentId ? String(employee.departmentId) : "",
+    status: employee.status,
+    employeeType: employee.employeeType,
+    grade: employee.grade || "",
+    joinDate: employee.joinDate || "",
+    npwp: employee.npwp || "",
+    bpjs: employee.bpjs || "",
+    bankAccount: employee.bankAccount || "",
+    bankName: employee.bankName || "",
+    maritalStatus: employee.maritalStatus || "",
+    contractEndDate: employee.contractEndDate || "",
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("PUT", `/api/employees/${employee.id}`, data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/employees", employee.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      onOpenChange(false);
+      toast({ title: "Berhasil", description: "Data pegawai berhasil diperbarui" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateMutation.mutate({
+      ...form,
+      departmentId: form.departmentId ? parseInt(form.departmentId) : null,
+      contractEndDate: form.contractEndDate || null,
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Edit Data Pegawai</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Nama Lengkap</label>
+              <Input value={form.fullName} onChange={e => setForm({...form, fullName: e.target.value})} required data-testid="edit-input-fullname" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Jenis Kelamin</label>
+              <Select value={form.gender} onValueChange={v => setForm({...form, gender: v})}>
+                <SelectTrigger data-testid="edit-select-gender"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Laki-laki">Laki-laki</SelectItem>
+                  <SelectItem value="Perempuan">Perempuan</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Tempat Lahir</label>
+              <Input value={form.birthPlace} onChange={e => setForm({...form, birthPlace: e.target.value})} data-testid="edit-input-birthplace" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Tanggal Lahir</label>
+              <Input type="date" value={form.birthDate} onChange={e => setForm({...form, birthDate: e.target.value})} data-testid="edit-input-birthdate" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Email</label>
+              <Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} data-testid="edit-input-email" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">No. HP</label>
+              <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} data-testid="edit-input-phone" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-sm font-medium mb-1.5 block">Alamat</label>
+              <Input value={form.address} onChange={e => setForm({...form, address: e.target.value})} data-testid="edit-input-address" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Agama</label>
+              <Select value={form.religion} onValueChange={v => setForm({...form, religion: v})}>
+                <SelectTrigger data-testid="edit-select-religion"><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {["Islam", "Kristen", "Katolik", "Hindu", "Buddha", "Konghucu"].map(r => (
+                    <SelectItem key={r} value={r}>{r}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Pendidikan</label>
+              <Input value={form.education} onChange={e => setForm({...form, education: e.target.value})} data-testid="edit-input-education" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Bagian</label>
+              <Select value={form.departmentId} onValueChange={v => setForm({...form, departmentId: v})}>
+                <SelectTrigger data-testid="edit-select-department"><SelectValue placeholder="Pilih Bagian" /></SelectTrigger>
+                <SelectContent>
+                  {departments.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Golongan</label>
+              <Input value={form.grade} onChange={e => setForm({...form, grade: e.target.value})} data-testid="edit-input-grade" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Status</label>
+              <Select value={form.status} onValueChange={v => setForm({...form, status: v})}>
+                <SelectTrigger data-testid="edit-select-status"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aktif">Aktif</SelectItem>
+                  <SelectItem value="nonaktif">Non-Aktif</SelectItem>
+                  <SelectItem value="pensiun">Pensiun</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Tipe Pegawai</label>
+              <Select value={form.employeeType} onValueChange={v => setForm({...form, employeeType: v})}>
+                <SelectTrigger data-testid="edit-select-type"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="tetap">Tetap</SelectItem>
+                  <SelectItem value="kontrak">Kontrak</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Tanggal Masuk</label>
+              <Input type="date" value={form.joinDate} onChange={e => setForm({...form, joinDate: e.target.value})} data-testid="edit-input-joindate" />
+            </div>
+            {form.employeeType === "kontrak" && (
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Tanggal Berakhir Kontrak</label>
+                <Input type="date" value={form.contractEndDate} onChange={e => setForm({...form, contractEndDate: e.target.value})} data-testid="edit-input-contract-end" />
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Status Pernikahan</label>
+              <Select value={form.maritalStatus} onValueChange={v => setForm({...form, maritalStatus: v})}>
+                <SelectTrigger data-testid="edit-select-marital"><SelectValue placeholder="Pilih" /></SelectTrigger>
+                <SelectContent>
+                  {["Lajang", "Menikah", "Cerai"].map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">NPWP</label>
+              <Input value={form.npwp} onChange={e => setForm({...form, npwp: e.target.value})} data-testid="edit-input-npwp" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">BPJS</label>
+              <Input value={form.bpjs} onChange={e => setForm({...form, bpjs: e.target.value})} data-testid="edit-input-bpjs" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Nama Bank</label>
+              <Input value={form.bankName} onChange={e => setForm({...form, bankName: e.target.value})} data-testid="edit-input-bankname" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">No. Rekening</label>
+              <Input value={form.bankAccount} onChange={e => setForm({...form, bankAccount: e.target.value})} data-testid="edit-input-bankaccount" />
+            </div>
+          </div>
+          <Button type="submit" className="w-full" disabled={updateMutation.isPending} data-testid="btn-submit-edit">
+            {updateMutation.isPending ? "Menyimpan..." : "Simpan Perubahan"}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function UserAccountDialog({ employeeId, employeeName, userAccount, open, onOpenChange }: {
+  employeeId: number;
+  employeeName: string;
+  userAccount?: { exists: boolean; username?: string; role?: string; id?: string };
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [role, setRole] = useState("pegawai");
+
+  const createUserMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await apiRequest("POST", "/api/users", data);
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message);
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users/employee", employeeId] });
+      setUsername("");
+      setPassword("");
+      setRole("pegawai");
+      toast({ title: "Berhasil", description: "Akun login berhasil dibuat" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await apiRequest("DELETE", `/api/users/${userId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/users/employee", employeeId] });
+      toast({ title: "Berhasil", description: "Akun login berhasil dihapus" });
+    },
+    onError: (err: any) => {
+      toast({ title: "Gagal", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    createUserMutation.mutate({ username, password, role, employeeId });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Kelola Akun Login</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">Pegawai: <span className="font-medium text-foreground">{employeeName}</span></p>
+
+        {userAccount?.exists ? (
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">Akun sudah ada</p>
+                  <Badge variant="default" className="text-[11px]">{userAccount.role}</Badge>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                  <p className="text-[11px] text-muted-foreground font-medium mb-1">Username</p>
+                  <p className="text-sm font-semibold" data-testid="text-existing-username">{userAccount.username}</p>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+                  <p className="text-[11px] text-muted-foreground font-medium mb-1">Role</p>
+                  <p className="text-sm font-semibold" data-testid="text-existing-role">{userAccount.role === "admin" ? "Administrator" : "Pegawai"}</p>
+                </div>
+                <Button
+                  variant="destructive"
+                  className="w-full gap-2"
+                  onClick={() => {
+                    if (confirm("Yakin ingin menghapus akun login ini?")) {
+                      deleteUserMutation.mutate(userAccount.id!);
+                    }
+                  }}
+                  disabled={deleteUserMutation.isPending}
+                  data-testid="btn-delete-user"
+                >
+                  <Trash2 className="w-4 h-4" /> Hapus Akun
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Username</label>
+              <Input
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                required
+                placeholder="Masukkan username"
+                data-testid="input-new-username"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Password</label>
+              <Input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                placeholder="Masukkan password"
+                minLength={6}
+                data-testid="input-new-password"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Role</label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger data-testid="select-new-role"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pegawai">Pegawai</SelectItem>
+                  <SelectItem value="admin">Administrator</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button type="submit" className="w-full gap-2" disabled={createUserMutation.isPending} data-testid="btn-create-user">
+              <UserPlus className="w-4 h-4" />
+              {createUserMutation.isPending ? "Membuat..." : "Buat Akun Login"}
+            </Button>
+          </form>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
