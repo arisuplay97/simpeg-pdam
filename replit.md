@@ -1,7 +1,7 @@
 # PDAM Tirta Ardhia Rinjani - Sistem Kepegawaian
 
 ## Overview
-Web-based HR and operations management system for PDAM Tirta Ardhia Rinjani (regional water utility company). Modern SaaS-style enterprise dashboard with comprehensive employee management, attendance tracking, payroll, finance, performance evaluation, rank promotion workflow, and salary increase management.
+Web-based HR and operations management system for PDAM Tirta Ardhia Rinjani (regional water utility company). Modern SaaS-style enterprise dashboard with comprehensive employee management, attendance tracking, payroll with detailed deduction breakdown, finance, performance evaluation, rank promotion workflow, and salary increase management.
 
 ## Architecture
 - **Frontend**: React + TypeScript + Vite + TailwindCSS + shadcn/ui
@@ -22,12 +22,12 @@ Web-based HR and operations management system for PDAM Tirta Ardhia Rinjani (reg
 - Default accounts: admin/admin123, direktur/direktur123, doni.alga/pegawai123, siti.rahayu/pegawai123, bambang.purnomo/pegawai123
 
 ## Key Features
-1. **Login Page** - Droplets icon branding, 3 demo account buttons (Admin/Direktur/Pegawai)
+1. **Login Page** - Company logo image, 3 demo account buttons (Admin/Direktur/Pegawai), 350+ Pegawai stat
 2. **Dashboard** - Statistics cards, attendance charts, salary charts, department distribution, notifications, approval section for Direktur
 3. **Employee Management** - Full CRUD, search/filter, employee detail with tabs
 4. **Attendance** - Daily tracking, check-in/out, lateness monitoring
 5. **Leave Management** - Request creation, approval workflow
-6. **Payroll** - Salary breakdown, distribution charts
+6. **Payroll** - Expandable salary breakdown with detailed deduction items (BPJS Kes 1%, BPJS TK 2%, PPh21, Iuran Pensiun, Pinjaman, Koperasi, Disiplin), custom deduction support per employee, earnings vs deductions breakdown, distribution charts
 7. **Finance** - Cash flow dashboard, income/expense tracking
 8. **Performance** - KPI scoring, progress bars
 9. **Mutations** - Transfer, promotion, demotion management
@@ -51,13 +51,13 @@ client/src/lib/auth.tsx    - Auth context provider + useAuth hook
 client/src/lib/theme-provider.tsx - Dark/light theme
 client/src/components/layout/app-layout.tsx - Sidebar + topbar layout
 client/src/pages/
-  login.tsx                - Login page with Droplets icon branding
+  login.tsx                - Login page with company logo
   dashboard.tsx            - Main dashboard with approval section
   employees.tsx            - Employee list
   employee-detail.tsx      - Employee detail with tabs
   attendance.tsx           - Attendance management
   leave.tsx                - Leave/permission management
-  payroll.tsx              - Payroll/salary
+  payroll.tsx              - Payroll with expandable deduction breakdown
   finance.tsx              - Financial transactions
   performance.tsx          - Performance reviews
   mutations.tsx            - Mutations/promotions
@@ -69,11 +69,18 @@ client/src/pages/
 ```
 
 ## Database Tables
-departments, positions, employees, attendance, leave_requests, payroll, finance_transactions, performance_reviews, mutations, trainings, documents, notifications, users, rank_promotions, salary_increases, approval_logs
+departments, positions, employees, attendance, leave_requests, payroll, payroll_deductions, finance_transactions, performance_reviews, mutations, trainings, documents, notifications, users, rank_promotions, salary_increases, approval_logs
 
-## New Tables
-- **rank_promotions**: Tracks rank promotion requests with multi-step approval (diajukan→review_hrd→review_kabag→approval_direktur→approved)
-- **salary_increases**: Tracks salary increase requests with performance scoring
+## Payroll Deduction System
+- **payroll** table has individual deduction columns: bpjs_kesehatan_deduction (1%), bpjs_ketenagakerjaan_deduction (2%), pph21_deduction, pension_deduction (1%), loan_deduction, cooperative_deduction, discipline_deduction
+- **payroll_deductions** table stores individual deduction line items per payroll record with type, label, amount, description
+- Types: bpjs_kesehatan, bpjs_ketenagakerjaan, pph21, iuran_pensiun, pinjaman, koperasi, disiplin, custom
+- Admin/HRD can add custom deductions per employee per period
+- API: GET /api/payroll/:id/deductions, POST /api/payroll/:id/deductions, DELETE /api/payroll-deductions/:id
+
+## Rank Promotion & Salary Increase
+- **rank_promotions**: Multi-step approval (diajukan→review_hrd→review_kabag→approval_direktur→approved)
+- **salary_increases**: Performance-based salary increase with approval workflow
 - **approval_logs**: Audit trail for all approval actions
 
 ## Employee Fields Added
@@ -89,4 +96,4 @@ departments, positions, employees, attendance, leave_requests, payroll, finance_
 - Colors: Blue primary (#0284c7), turquoise accents, clean layout
 - Dark mode supported via CSS class toggle
 - Mobile responsive sidebar
-- Droplets icon used for branding (no logo image)
+- Company logo used for branding (Logo_Tirta_1773201248263.png with transparent background)

@@ -187,6 +187,78 @@ export async function registerRoutes(
     res.json(data);
   });
 
+  app.get("/api/payroll/:id/deductions", async (req, res) => {
+    const data = await storage.getPayrollDeductions(parseInt(req.params.id));
+    res.json(data);
+  });
+  app.post("/api/payroll/:id/deductions", requireDirektur, async (req, res) => {
+    try {
+      const { label, amount, description, type } = req.body;
+      if (!label || typeof label !== "string" || label.trim().length === 0) {
+        return res.status(400).json({ message: "Nama potongan harus diisi" });
+      }
+      const amountNum = Number(amount);
+      if (!amount || isNaN(amountNum) || amountNum <= 0) {
+        return res.status(400).json({ message: "Jumlah harus angka positif" });
+      }
+
+      const payrollId = parseInt(req.params.id);
+      const pr = await storage.getPayrollById(payrollId);
+      if (!pr) return res.status(404).json({ message: "Payroll not found" });
+
+      const deduction = await storage.createPayrollDeduction({
+        payrollId,
+        employeeId: pr.employeeId,
+        period: pr.period,
+        type: type || "custom",
+        label: label.trim(),
+        amount: String(amountNum),
+        description: description || null,
+      });
+
+      const newTotal = Number(pr.totalDeductions) + amountNum;
+      await storage.updatePayroll(payrollId, {
+        totalDeductions: String(newTotal),
+        netSalary: String(Number(pr.totalEarnings) - newTotal),
+      } as any);
+
+      res.json(deduction);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.use("/api/payroll-deductions", requireAuth);
+  app.delete("/api/payroll-deductions/:id", requireDirektur, async (req, res) => {
+    try {
+      const deductionId = parseInt(req.params.id);
+      const foundDeduction = await storage.getPayrollDeductionById(deductionId);
+      if (!foundDeduction) {
+        return res.status(404).json({ message: "Deduction not found" });
+      }
+      if (foundDeduction.type !== "custom") {
+        return res.status(400).json({ message: "Hanya potongan custom yang bisa dihapus" });
+      }
+
+      const foundPayroll = await storage.getPayrollById(foundDeduction.payrollId);
+      if (!foundPayroll) {
+        return res.status(404).json({ message: "Payroll not found" });
+      }
+
+      await storage.deletePayrollDeduction(deductionId);
+
+      const newTotal = Number(foundPayroll.totalDeductions) - Number(foundDeduction.amount);
+      await storage.updatePayroll(foundPayroll.id, {
+        totalDeductions: String(newTotal),
+        netSalary: String(Number(foundPayroll.totalEarnings) - newTotal),
+      } as any);
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.get("/api/finance", async (_req, res) => {
     const data = await storage.getFinanceTransactions();
     res.json(data);

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useLocation } from "wouter";
-import { Eye, EyeOff, LogIn, Loader2, Droplets } from "lucide-react";
+import { Eye, EyeOff, LogIn, Loader2 } from "lucide-react";
+import logoPath from "@assets/Logo_Tirta_1773201248263.png";
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -42,25 +43,17 @@ export default function LoginPage() {
         </div>
 
         <div className="relative z-10 flex flex-col items-center justify-center w-full px-12 text-white">
-          <div className="w-32 h-32 mb-8 bg-white/20 backdrop-blur-sm rounded-3xl p-4 flex items-center justify-center shadow-2xl">
-            <Droplets className="w-20 h-20" />
+          <div className="w-40 h-40 mb-8 bg-white/20 backdrop-blur-sm rounded-3xl p-4 flex items-center justify-center shadow-2xl">
+            <img src={logoPath} alt="PDAM Tirta Ardhia Rinjani" className="w-32 h-32 object-contain" />
           </div>
           <h1 className="text-4xl font-bold mb-3 text-center">PDAM Tirta Ardhia Rinjani</h1>
           <p className="text-lg text-blue-100 text-center max-w-md mb-8">
             Sistem Informasi Kepegawaian & Manajemen Operasional Internal
           </p>
-          <div className="grid grid-cols-3 gap-6 mt-4">
+          <div className="mt-4">
             <div className="text-center">
-              <div className="text-3xl font-bold">150+</div>
+              <div className="text-3xl font-bold">350+</div>
               <div className="text-sm text-blue-200">Pegawai</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold">6</div>
-              <div className="text-sm text-blue-200">Departemen</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold">12</div>
-              <div className="text-sm text-blue-200">Modul</div>
             </div>
           </div>
         </div>
@@ -69,8 +62,8 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center px-4 py-8">
         <div className="w-full max-w-md">
           <div className="lg:hidden flex flex-col items-center mb-8">
-            <div className="w-20 h-20 mb-4 bg-primary/10 rounded-2xl p-5 flex items-center justify-center border border-primary/20">
-              <Droplets className="w-full h-full text-primary" />
+            <div className="w-20 h-20 mb-4 bg-primary/10 rounded-2xl p-3 flex items-center justify-center border border-primary/20">
+              <img src={logoPath} alt="PDAM Tirta Ardhia Rinjani" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-xl font-bold text-foreground">PDAM Tirta Ardhia Rinjani</h1>
             <p className="text-sm text-muted-foreground">Sistem Informasi Kepegawaian</p>

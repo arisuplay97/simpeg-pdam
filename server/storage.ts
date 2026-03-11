@@ -2,17 +2,18 @@ import { eq, desc, sql, and, gte, lte, like, count, isNull, or } from "drizzle-o
 import { db } from "./db";
 import {
   departments, positions, employees, attendance, leaveRequests,
-  payroll, financeTransactions, performanceReviews, mutations,
+  payroll, payrollDeductions, financeTransactions, performanceReviews, mutations,
   trainings, documents, notifications, users,
   rankPromotions, salaryIncreases, approvalLogs,
   type InsertDepartment, type InsertPosition, type InsertEmployee,
   type InsertAttendance, type InsertLeaveRequest, type InsertPayroll,
+  type InsertPayrollDeduction,
   type InsertFinanceTransaction, type InsertPerformanceReview,
   type InsertMutation, type InsertTraining, type InsertDocument,
   type InsertNotification, type InsertUser,
   type InsertRankPromotion, type InsertSalaryIncrease, type InsertApprovalLog,
   type Department, type Position, type Employee, type Attendance,
-  type LeaveRequest, type Payroll, type FinanceTransaction,
+  type LeaveRequest, type Payroll, type PayrollDeduction, type FinanceTransaction,
   type PerformanceReview, type Mutation, type Training, type Document,
   type Notification, type User,
   type RankPromotion, type SalaryIncrease, type ApprovalLog,
@@ -116,9 +117,28 @@ export const storage = {
     const [result] = await db.insert(payroll).values(data).returning();
     return result;
   },
+  async getPayrollById(id: number): Promise<Payroll | undefined> {
+    const [result] = await db.select().from(payroll).where(eq(payroll.id, id));
+    return result;
+  },
+  async getPayrollDeductionById(id: number): Promise<PayrollDeduction | undefined> {
+    const [result] = await db.select().from(payrollDeductions).where(eq(payrollDeductions.id, id));
+    return result;
+  },
   async updatePayroll(id: number, data: Partial<InsertPayroll>): Promise<Payroll> {
     const [result] = await db.update(payroll).set(data).where(eq(payroll.id, id)).returning();
     return result;
+  },
+
+  async getPayrollDeductions(payrollId: number): Promise<PayrollDeduction[]> {
+    return db.select().from(payrollDeductions).where(eq(payrollDeductions.payrollId, payrollId)).orderBy(payrollDeductions.type);
+  },
+  async createPayrollDeduction(data: InsertPayrollDeduction): Promise<PayrollDeduction> {
+    const [result] = await db.insert(payrollDeductions).values(data).returning();
+    return result;
+  },
+  async deletePayrollDeduction(id: number): Promise<void> {
+    await db.delete(payrollDeductions).where(eq(payrollDeductions.id, id));
   },
 
   async getFinanceTransactions(): Promise<FinanceTransaction[]> {

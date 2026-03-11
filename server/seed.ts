@@ -1,7 +1,7 @@
 import { db } from "./db";
 import {
   departments, positions, employees, attendance, leaveRequests,
-  payroll, financeTransactions, performanceReviews, mutations,
+  payroll, payrollDeductions, financeTransactions, performanceReviews, mutations,
   trainings, documents, notifications, users,
   rankPromotions, salaryIncreases, approvalLogs
 } from "@shared/schema";
@@ -117,9 +117,13 @@ export async function seedDatabase() {
     const ot = Math.floor(Math.random() * 800000);
     const inc = Math.floor(Math.random() * 500000);
     const totalEarn = basic + posAllow + famAllow + transAllow + mealAllow + ot + inc;
-    const bpjsDed = Math.floor(basic * 0.04);
-    const taxDed = Math.floor(totalEarn * 0.05);
-    const totalDed = bpjsDed + taxDed;
+    const bpjsKes = Math.floor(basic * 0.01);
+    const bpjsTK = Math.floor(basic * 0.02);
+    const pph21 = Math.floor(totalEarn * 0.05);
+    const pension = Math.floor(basic * 0.01);
+    const loan = emp.id % 5 === 0 ? 500000 : 0;
+    const koperasi = emp.id % 3 === 0 ? 200000 : 0;
+    const totalDed = bpjsKes + bpjsTK + pph21 + pension + loan + koperasi;
     return {
       employeeId: emp.id,
       period: currentPeriod,
@@ -130,16 +134,31 @@ export async function seedDatabase() {
       mealAllowance: String(mealAllow),
       overtime: String(ot),
       incentive: String(inc),
-      bpjsDeduction: String(bpjsDed),
-      taxDeduction: String(taxDed),
-      otherDeduction: "0",
+      bpjsKesehatanDeduction: String(bpjsKes),
+      bpjsKetenagakerjaanDeduction: String(bpjsTK),
+      pph21Deduction: String(pph21),
+      pensionDeduction: String(pension),
+      loanDeduction: String(loan),
+      cooperativeDeduction: String(koperasi),
+      disciplineDeduction: "0",
       totalEarnings: String(totalEarn),
       totalDeductions: String(totalDed),
       netSalary: String(totalEarn - totalDed),
       status: "final",
     };
   });
-  await db.insert(payroll).values(payrollRecords);
+  const payrollData = await db.insert(payroll).values(payrollRecords).returning();
+
+  const deductionRecords: any[] = [];
+  payrollData.forEach(pr => {
+    if (Number(pr.bpjsKesehatanDeduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "bpjs_kesehatan", label: "BPJS Kesehatan (1%)", amount: pr.bpjsKesehatanDeduction, description: "Iuran BPJS Kesehatan 1% dari gaji pokok" });
+    if (Number(pr.bpjsKetenagakerjaanDeduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "bpjs_ketenagakerjaan", label: "BPJS Ketenagakerjaan (2%)", amount: pr.bpjsKetenagakerjaanDeduction, description: "Iuran BPJS Ketenagakerjaan 2% dari gaji pokok" });
+    if (Number(pr.pph21Deduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "pph21", label: "PPh 21", amount: pr.pph21Deduction, description: "Pajak penghasilan pasal 21" });
+    if (Number(pr.pensionDeduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "iuran_pensiun", label: "Iuran Pensiun (1%)", amount: pr.pensionDeduction, description: "Iuran pensiun 1% dari gaji pokok" });
+    if (Number(pr.loanDeduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "pinjaman", label: "Potongan Pinjaman", amount: pr.loanDeduction, description: "Cicilan pinjaman pegawai" });
+    if (Number(pr.cooperativeDeduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "koperasi", label: "Potongan Koperasi", amount: pr.cooperativeDeduction, description: "Iuran wajib koperasi pegawai" });
+  });
+  if (deductionRecords.length > 0) await db.insert(payrollDeductions).values(deductionRecords);
 
   await db.insert(financeTransactions).values([
     { type: "masuk", category: "Pendapatan Air", amount: "450000000", description: "Pendapatan rekening air bulan Februari", date: "2026-02-28", status: "approved", reference: "INV-2026-02" },

@@ -86,13 +86,29 @@ export const payroll = pgTable("payroll", {
   mealAllowance: decimal("meal_allowance", { precision: 12, scale: 2 }).default("0"),
   overtime: decimal("overtime", { precision: 12, scale: 2 }).default("0"),
   incentive: decimal("incentive", { precision: 12, scale: 2 }).default("0"),
-  bpjsDeduction: decimal("bpjs_deduction", { precision: 12, scale: 2 }).default("0"),
-  taxDeduction: decimal("tax_deduction", { precision: 12, scale: 2 }).default("0"),
-  otherDeduction: decimal("other_deduction", { precision: 12, scale: 2 }).default("0"),
+  bpjsKesehatanDeduction: decimal("bpjs_kesehatan_deduction", { precision: 12, scale: 2 }).default("0"),
+  bpjsKetenagakerjaanDeduction: decimal("bpjs_ketenagakerjaan_deduction", { precision: 12, scale: 2 }).default("0"),
+  pph21Deduction: decimal("pph21_deduction", { precision: 12, scale: 2 }).default("0"),
+  pensionDeduction: decimal("pension_deduction", { precision: 12, scale: 2 }).default("0"),
+  loanDeduction: decimal("loan_deduction", { precision: 12, scale: 2 }).default("0"),
+  cooperativeDeduction: decimal("cooperative_deduction", { precision: 12, scale: 2 }).default("0"),
+  disciplineDeduction: decimal("discipline_deduction", { precision: 12, scale: 2 }).default("0"),
   totalEarnings: decimal("total_earnings", { precision: 12, scale: 2 }).notNull(),
   totalDeductions: decimal("total_deductions", { precision: 12, scale: 2 }).notNull(),
   netSalary: decimal("net_salary", { precision: 12, scale: 2 }).notNull(),
   status: text("status").notNull().default("draft"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const payrollDeductions = pgTable("payroll_deductions", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  payrollId: integer("payroll_id").references(() => payroll.id).notNull(),
+  employeeId: integer("employee_id").references(() => employees.id).notNull(),
+  period: text("period").notNull(),
+  type: text("type").notNull(),
+  label: text("label").notNull(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  description: text("description"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -232,6 +248,7 @@ export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: tru
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
 export const insertLeaveRequestSchema = createInsertSchema(leaveRequests).omit({ id: true, createdAt: true, approvedAt: true });
 export const insertPayrollSchema = createInsertSchema(payroll).omit({ id: true, createdAt: true });
+export const insertPayrollDeductionSchema = createInsertSchema(payrollDeductions).omit({ id: true, createdAt: true });
 export const insertFinanceTransactionSchema = createInsertSchema(financeTransactions).omit({ id: true, createdAt: true });
 export const insertPerformanceReviewSchema = createInsertSchema(performanceReviews).omit({ id: true, createdAt: true });
 export const insertMutationSchema = createInsertSchema(mutations).omit({ id: true, createdAt: true });
@@ -255,6 +272,8 @@ export type LeaveRequest = typeof leaveRequests.$inferSelect;
 export type InsertLeaveRequest = z.infer<typeof insertLeaveRequestSchema>;
 export type Payroll = typeof payroll.$inferSelect;
 export type InsertPayroll = z.infer<typeof insertPayrollSchema>;
+export type PayrollDeduction = typeof payrollDeductions.$inferSelect;
+export type InsertPayrollDeduction = z.infer<typeof insertPayrollDeductionSchema>;
 export type FinanceTransaction = typeof financeTransactions.$inferSelect;
 export type InsertFinanceTransaction = z.infer<typeof insertFinanceTransactionSchema>;
 export type PerformanceReview = typeof performanceReviews.$inferSelect;
