@@ -105,7 +105,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         </ScrollArea>
 
-        <div className="p-2 border-t border-sidebar-border">
+        <div className="p-2 border-t border-sidebar-border space-y-1">
+          <button
+            onClick={logout}
+            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-red-500 hover:bg-red-500/10 transition-colors ${collapsed ? "justify-center px-0" : ""}`}
+            data-testid="btn-sidebar-logout"
+          >
+            <LogOut className="w-[18px] h-[18px] shrink-0" />
+            {!collapsed && <span>Keluar</span>}
+          </button>
           <button
             onClick={() => setCollapsed(!collapsed)}
             className="hidden lg:flex w-full items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-sidebar-accent transition-colors"
