@@ -324,7 +324,7 @@ function EditPayrollDialog({
     const totalEarnings = basic + posAllow + famAllow + transAllow + mealAllow + ot + inc;
 
     const bpjsKes = Math.round(basic * 0.01 * 100) / 100;
-    const bpjsTk = Math.round(basic * 0.02 * 100) / 100;
+    const bpjsTk = Math.round(basic * 0.05 * 100) / 100;
     const pension = Math.round(basic * 0.01 * 100) / 100;
     const pph21 = Math.round(basic * 0.05 * 100) / 100;
     const totalDeductions = bpjsKes + bpjsTk + pension + pph21;
@@ -420,7 +420,7 @@ function EditPayrollDialog({
             <Input type="number" value={incentive} onChange={e => setIncentive(e.target.value)} data-testid="input-edit-incentive" />
           </div>
 
-          <p className="text-[11px] text-muted-foreground italic">Potongan BPJS Kes (1%), BPJS TK (2%), Iuran Pensiun (1%), PPh21 (5%) dihitung ulang otomatis dari Gaji Pokok.</p>
+          <p className="text-[11px] text-muted-foreground italic">Potongan BPJS Kes (1%), BPJS TK (5%), Iuran Pensiun (1%), PPh21 (5%) dihitung ulang otomatis dari Gaji Pokok.</p>
         </div>
 
         <div className="flex gap-3 mt-6">
@@ -490,7 +490,7 @@ function AddPayrollDialog({
     const totalEarnings = basic + posAllow + famAllow + transAllow + mealAllow + ot + inc;
 
     const bpjsKes = Math.round(basic * 0.01 * 100) / 100;
-    const bpjsTk = Math.round(basic * 0.02 * 100) / 100;
+    const bpjsTk = Math.round(basic * 0.05 * 100) / 100;
     const pension = Math.round(basic * 0.01 * 100) / 100;
     const pph21 = Math.round(basic * 0.05 * 100) / 100;
     const totalDeductions = bpjsKes + bpjsTk + pension + pph21;
@@ -592,7 +592,7 @@ function AddPayrollDialog({
             <Input type="number" value={incentive} onChange={e => setIncentive(e.target.value)} data-testid="input-payroll-incentive" />
           </div>
 
-          <p className="text-[11px] text-muted-foreground italic">Potongan BPJS Kes (1%), BPJS TK (2%), Iuran Pensiun (1%), PPh21 (5%) dihitung otomatis dari Gaji Pokok.</p>
+          <p className="text-[11px] text-muted-foreground italic">Potongan BPJS Kes (1%), BPJS TK (5%), Iuran Pensiun (1%), PPh21 (5%) dihitung otomatis dari Gaji Pokok.</p>
         </div>
 
         <div className="flex gap-3 mt-6">

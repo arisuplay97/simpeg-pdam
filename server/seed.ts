@@ -158,7 +158,7 @@ export async function seedDatabase() {
     const inc = Math.floor(Math.random() * 500000);
     const totalEarn = basic + posAllow + famAllow + transAllow + mealAllow + ot + inc;
     const bpjsKes = Math.floor(basic * 0.01);
-    const bpjsTK = Math.floor(basic * 0.02);
+    const bpjsTK = Math.floor(basic * 0.05);
     const pph21 = Math.floor(totalEarn * 0.05);
     const pension = Math.floor(basic * 0.01);
     const loan = emp.id % 5 === 0 ? 500000 : 0;
@@ -192,7 +192,7 @@ export async function seedDatabase() {
   const deductionRecords: any[] = [];
   payrollData.forEach(pr => {
     if (Number(pr.bpjsKesehatanDeduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "bpjs_kesehatan", label: "BPJS Kesehatan (1%)", amount: pr.bpjsKesehatanDeduction, description: "Iuran BPJS Kesehatan 1% dari gaji pokok" });
-    if (Number(pr.bpjsKetenagakerjaanDeduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "bpjs_ketenagakerjaan", label: "BPJS Ketenagakerjaan (2%)", amount: pr.bpjsKetenagakerjaanDeduction, description: "Iuran BPJS Ketenagakerjaan 2% dari gaji pokok" });
+    if (Number(pr.bpjsKetenagakerjaanDeduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "bpjs_ketenagakerjaan", label: "BPJS Ketenagakerjaan (5%)", amount: pr.bpjsKetenagakerjaanDeduction, description: "Iuran BPJS Ketenagakerjaan 5% dari gaji pokok" });
     if (Number(pr.pph21Deduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "pph21", label: "PPh 21", amount: pr.pph21Deduction, description: "Pajak penghasilan pasal 21" });
     if (Number(pr.pensionDeduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "iuran_pensiun", label: "Iuran Pensiun (1%)", amount: pr.pensionDeduction, description: "Iuran pensiun 1% dari gaji pokok" });
     if (Number(pr.loanDeduction) > 0) deductionRecords.push({ payrollId: pr.id, employeeId: pr.employeeId, period: pr.period, type: "pinjaman", label: "Potongan Pinjaman", amount: pr.loanDeduction, description: "Cicilan pinjaman pegawai" });
