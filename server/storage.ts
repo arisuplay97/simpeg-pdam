@@ -138,6 +138,7 @@ export const storage = {
     return result;
   },
   async deletePayroll(id: number): Promise<void> {
+    await db.delete(payslipLogs).where(eq(payslipLogs.payrollId, id));
     await db.delete(payrollDeductions).where(eq(payrollDeductions.payrollId, id));
     await db.delete(payroll).where(eq(payroll.id, id));
   },
