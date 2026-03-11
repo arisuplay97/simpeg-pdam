@@ -21,8 +21,8 @@ async function ensureUsersExist() {
 
   const userValues: any[] = [
     { username: "admin", password: adminHash, role: "admin", employeeId: null },
+    { username: "direktur", password: direkturHash, role: "direktur", employeeId: direkturEmp?.id || null },
   ];
-  if (direkturEmp) userValues.push({ username: "direktur", password: direkturHash, role: "direktur", employeeId: direkturEmp.id });
   if (ahmadEmp) userValues.push({ username: "ahmad.suryadi", password: pegawaiHash, role: "pegawai", employeeId: ahmadEmp.id });
   if (sitiEmp) userValues.push({ username: "siti.rahayu", password: pegawaiHash, role: "pegawai", employeeId: sitiEmp.id });
   if (bambangEmp) userValues.push({ username: "bambang.purnomo", password: pegawaiHash, role: "pegawai", employeeId: bambangEmp.id });
@@ -38,6 +38,15 @@ export async function seedDatabase() {
   const [existingUsers] = await db.select({ count: count() }).from(users);
   if (existingUsers.count === 0) {
     await ensureUsersExist();
+  } else {
+    const direkturUser = await db.select().from(users).where(eq(users.username, "direktur"));
+    if (direkturUser.length === 0) {
+      const direkturHash = await hashPassword("direktur123");
+      const allEmps = await db.select().from(employees);
+      const direkturEmp = allEmps.find(e => e.fullName.includes("Doni Alga"));
+      await db.insert(users).values({ username: "direktur", password: direkturHash, role: "direktur", employeeId: direkturEmp?.id || null });
+      console.log("Direktur account created");
+    }
   }
 
   const [existing] = await db.select({ count: count() }).from(employees);
