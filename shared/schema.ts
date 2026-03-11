@@ -232,6 +232,16 @@ export const salaryIncreases = pgTable("salary_increases", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const payslipLogs = pgTable("payslip_logs", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  payrollId: integer("payroll_id").references(() => payroll.id).notNull(),
+  employeeId: integer("employee_id").references(() => employees.id).notNull(),
+  action: text("action").notNull(),
+  performedBy: text("performed_by").notNull(),
+  ipAddress: text("ip_address"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const approvalLogs = pgTable("approval_logs", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   entityType: text("entity_type").notNull(),
@@ -258,6 +268,7 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
 export const insertUserSchema = createInsertSchema(users).pick({ username: true, password: true, role: true, employeeId: true });
 export const insertRankPromotionSchema = createInsertSchema(rankPromotions).omit({ id: true, createdAt: true, approvedAt: true });
 export const insertSalaryIncreaseSchema = createInsertSchema(salaryIncreases).omit({ id: true, createdAt: true, approvedAt: true });
+export const insertPayslipLogSchema = createInsertSchema(payslipLogs).omit({ id: true, createdAt: true });
 export const insertApprovalLogSchema = createInsertSchema(approvalLogs).omit({ id: true, createdAt: true });
 
 export type Department = typeof departments.$inferSelect;
@@ -292,5 +303,7 @@ export type RankPromotion = typeof rankPromotions.$inferSelect;
 export type InsertRankPromotion = z.infer<typeof insertRankPromotionSchema>;
 export type SalaryIncrease = typeof salaryIncreases.$inferSelect;
 export type InsertSalaryIncrease = z.infer<typeof insertSalaryIncreaseSchema>;
+export type PayslipLog = typeof payslipLogs.$inferSelect;
+export type InsertPayslipLog = z.infer<typeof insertPayslipLogSchema>;
 export type ApprovalLog = typeof approvalLogs.$inferSelect;
 export type InsertApprovalLog = z.infer<typeof insertApprovalLogSchema>;

@@ -228,6 +228,39 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/payroll/:id/log-action", async (req, res) => {
+    try {
+      const payrollId = parseInt(req.params.id);
+      const pr = await storage.getPayrollById(payrollId);
+      if (!pr) return res.status(404).json({ message: "Payroll not found" });
+
+      const role = req.session.role;
+      const empId = req.session.employeeId;
+      const isAdmin = role === "admin" || role === "direktur";
+      const isOwner = empId === pr.employeeId;
+      if (!isAdmin && !isOwner) {
+        return res.status(403).json({ message: "Tidak memiliki akses untuk slip gaji ini" });
+      }
+
+      const { action } = req.body;
+      if (!action || !["print", "download_pdf", "send_email"].includes(action)) {
+        return res.status(400).json({ message: "Aksi tidak valid" });
+      }
+
+      await storage.createPayslipLog({
+        payrollId,
+        employeeId: pr.employeeId,
+        action,
+        performedBy: String(req.session.userId || "unknown"),
+        ipAddress: req.ip || null,
+      });
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.use("/api/payroll-deductions", requireAuth);
   app.delete("/api/payroll-deductions/:id", requireDirektur, async (req, res) => {
     try {

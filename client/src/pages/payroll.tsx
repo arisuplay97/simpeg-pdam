@@ -1,28 +1,31 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import type { Payroll, Employee, PayrollDeduction } from "@shared/schema";
+import type { Payroll, Employee, PayrollDeduction, Position, Department } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, TrendingUp, TrendingDown, Wallet, Search, ChevronDown, ChevronRight, Plus, Trash2, X } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Wallet, Search, ChevronDown, ChevronRight, Plus, Trash2, X, FileText } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import PayslipModal from "@/components/payslip-modal";
 
 const formatRp = (val: string | number | null) => {
   if (!val) return "Rp 0";
   return `Rp ${Number(val).toLocaleString('id-ID')}`;
 };
 
-function DeductionRow({ payrollItem, employees }: { payrollItem: Payroll; employees: Employee[] }) {
+function DeductionRow({ payrollItem, employees, positions, departments }: { payrollItem: Payroll; employees: Employee[]; positions: Position[]; departments: Department[] }) {
   const [expanded, setExpanded] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showSlip, setShowSlip] = useState(false);
   const [newLabel, setNewLabel] = useState("");
   const [newAmount, setNewAmount] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "direktur";
+  const canViewSlip = isAdmin || user?.employeeId === payrollItem.employeeId;
 
   const emp = employees.find(e => e.id === payrollItem.employeeId);
   const totalAllowance = Number(payrollItem.positionAllowance) + Number(payrollItem.familyAllowance) + Number(payrollItem.transportAllowance) + Number(payrollItem.mealAllowance);
@@ -34,7 +37,7 @@ function DeductionRow({ payrollItem, employees }: { payrollItem: Payroll; employ
       if (!res.ok) throw new Error("Failed to fetch deductions");
       return res.json();
     },
-    enabled: expanded,
+    enabled: expanded || showSlip,
   });
 
   const addDeduction = useMutation({
@@ -105,6 +108,17 @@ function DeductionRow({ payrollItem, employees }: { payrollItem: Payroll; employ
         <tr data-testid={`payroll-detail-${payrollItem.id}`}>
           <td colSpan={7} className="px-5 py-0">
             <div className="bg-muted/20 border border-border rounded-lg p-5 my-2">
+              {canViewSlip && (
+                <div className="flex justify-end mb-3">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowSlip(true); }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                    data-testid={`btn-view-slip-${payrollItem.id}`}
+                  >
+                    <FileText className="w-3.5 h-3.5" /> Lihat Slip Gaji
+                  </button>
+                </div>
+              )}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="text-sm font-semibold text-emerald-600 uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -205,6 +219,16 @@ function DeductionRow({ payrollItem, employees }: { payrollItem: Payroll; employ
           </td>
         </tr>
       )}
+      {showSlip && (
+        <PayslipModal
+          payrollItem={payrollItem}
+          employee={emp}
+          deductions={deductions}
+          positions={positions}
+          departments={departments}
+          onClose={() => setShowSlip(false)}
+        />
+      )}
     </>
   );
 }
@@ -217,6 +241,12 @@ export default function PayrollPage() {
   });
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
+  });
+  const { data: positions = [] } = useQuery<Position[]>({
+    queryKey: ["/api/positions"],
+  });
+  const { data: departments = [] } = useQuery<Department[]>({
+    queryKey: ["/api/departments"],
   });
 
   const totalGross = payrollData.reduce((s, p) => s + Number(p.totalEarnings), 0);
@@ -315,7 +345,7 @@ export default function PayrollPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {filtered.map((p) => (
-                  <DeductionRow key={p.id} payrollItem={p} employees={employees} />
+                  <DeductionRow key={p.id} payrollItem={p} employees={employees} positions={positions} departments={departments} />
                 ))}
               </tbody>
             </table>

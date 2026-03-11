@@ -69,7 +69,7 @@ client/src/pages/
 ```
 
 ## Database Tables
-departments, positions, employees, attendance, leave_requests, payroll, payroll_deductions, finance_transactions, performance_reviews, mutations, trainings, documents, notifications, users, rank_promotions, salary_increases, approval_logs
+departments, positions, employees, attendance, leave_requests, payroll, payroll_deductions, finance_transactions, performance_reviews, mutations, trainings, documents, notifications, users, rank_promotions, salary_increases, payslip_logs, approval_logs
 
 ## Payroll Deduction System
 - **payroll** table has individual deduction columns: bpjs_kesehatan_deduction (1%), bpjs_ketenagakerjaan_deduction (2%), pph21_deduction, pension_deduction (1%), loan_deduction, cooperative_deduction, discipline_deduction
@@ -77,6 +77,15 @@ departments, positions, employees, attendance, leave_requests, payroll, payroll_
 - Types: bpjs_kesehatan, bpjs_ketenagakerjaan, pph21, iuran_pensiun, pinjaman, koperasi, disiplin, custom
 - Admin/HRD can add custom deductions per employee per period
 - API: GET /api/payroll/:id/deductions, POST /api/payroll/:id/deductions, DELETE /api/payroll-deductions/:id
+
+## Slip Gaji (Payslip) Feature
+- **PayslipModal** component (`client/src/components/payslip-modal.tsx`) renders via React Portal on document.body
+- A5 landscape format with PDAM branding, RAHASIA watermark, slip code, Direktur signature
+- 3 action buttons: Cetak (window.print in new window), Download PDF (jsPDF, dynamic import), Kirim Email (simulated)
+- **payslip_logs** table tracks all print/download/email actions with payrollId, employeeId, action, performedBy, ipAddress
+- Backend: POST /api/payroll/:id/log-action (owner or admin/direktur access)
+- Escape key closes modal
+- jsPDF dynamically imported to avoid bundle bloat
 
 ## Rank Promotion & Salary Increase
 - **rank_promotions**: Multi-step approval (diajukan→review_hrd→review_kabag→approval_direktur→approved)
