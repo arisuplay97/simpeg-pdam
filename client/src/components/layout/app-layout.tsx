@@ -155,16 +155,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               )}
             </button>
 
-            <button
-              onClick={logout}
-              className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-destructive"
-              title="Logout"
-              data-testid="btn-logout"
-            >
-              <LogOut className="w-[18px] h-[18px]" />
-            </button>
-
-            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-border">
+            <div className="flex items-center gap-2 ml-1 pl-2 border-l border-border">
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                 <span className="text-xs font-semibold text-primary">{initials}</span>
               </div>
@@ -173,6 +164,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <p className="text-[11px] text-muted-foreground leading-tight">{roleLabel}</p>
               </div>
             </div>
+
+            <button
+              onClick={logout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 border border-destructive/30 transition-colors ml-2"
+              data-testid="btn-logout"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Keluar</span>
+            </button>
           </div>
         </header>
 
