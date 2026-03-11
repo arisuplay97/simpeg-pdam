@@ -75,6 +75,25 @@ export const storage = {
     return result;
   },
   async deleteEmployee(id: number): Promise<void> {
+    const empPayrolls = await db.select({ id: payroll.id }).from(payroll).where(eq(payroll.employeeId, id));
+    const payrollIds = empPayrolls.map(p => p.id);
+    if (payrollIds.length > 0) {
+      for (const pid of payrollIds) {
+        await db.delete(payslipLogs).where(eq(payslipLogs.payrollId, pid));
+        await db.delete(payrollDeductions).where(eq(payrollDeductions.payrollId, pid));
+      }
+    }
+    await db.delete(payrollDeductions).where(eq(payrollDeductions.employeeId, id));
+    await db.delete(payslipLogs).where(eq(payslipLogs.employeeId, id));
+    await db.delete(payroll).where(eq(payroll.employeeId, id));
+    await db.delete(attendance).where(eq(attendance.employeeId, id));
+    await db.delete(leaveRequests).where(eq(leaveRequests.employeeId, id));
+    await db.delete(performanceReviews).where(eq(performanceReviews.employeeId, id));
+    await db.delete(mutations).where(eq(mutations.employeeId, id));
+    await db.delete(documents).where(eq(documents.employeeId, id));
+    await db.delete(rankPromotions).where(eq(rankPromotions.employeeId, id));
+    await db.delete(salaryIncreases).where(eq(salaryIncreases.employeeId, id));
+    await db.delete(users).where(eq(users.employeeId, id));
     await db.delete(employees).where(eq(employees.id, id));
   },
 

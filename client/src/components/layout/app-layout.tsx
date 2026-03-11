@@ -8,8 +8,9 @@ import {
   LayoutDashboard, Users, CalendarCheck, FileText, DollarSign,
   BarChart3, ArrowLeftRight, GraduationCap, FolderOpen,
   Bell, ChevronLeft, ChevronRight, Sun, Moon, Search, Menu, X,
-  ClipboardList, LogOut, Droplets, Shield, TrendingUp
+  ClipboardList, LogOut, Shield, TrendingUp
 } from "lucide-react";
+import logoPath from "@assets/Logo_Tirta_1773201248263.png";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const menuItems = [
@@ -65,14 +66,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         data-testid="sidebar"
       >
         <div className={`flex items-center h-16 px-4 border-b border-sidebar-border ${collapsed ? "justify-center" : "gap-3"}`}>
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary text-primary-foreground shrink-0">
-            <Droplets className="w-5 h-5" />
-          </div>
+          <img src={logoPath} alt="Logo PDAM" className="w-9 h-9 rounded-lg shrink-0 object-contain" />
           {!collapsed && (
-            <div className="overflow-hidden">
-              <h1 className="text-sm font-semibold text-sidebar-foreground truncate leading-tight">PDAM Tirta</h1>
-              <p className="text-[11px] text-muted-foreground truncate leading-tight">Ardhia Rinjani</p>
-            </div>
+            <h1 className="text-sm font-semibold text-sidebar-foreground whitespace-nowrap leading-tight">PDAM Tirta Ardhia Rinjani</h1>
           )}
         </div>
 

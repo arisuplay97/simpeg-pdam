@@ -134,10 +134,6 @@ export async function registerRoutes(
   app.delete("/api/employees/:id", requireSuperAdmin, async (req, res) => {
     try {
       const empId = parseInt(req.params.id);
-      const relatedUsers = await storage.getUserByEmployeeId(empId);
-      if (relatedUsers) {
-        await storage.deleteUser(relatedUsers.id);
-      }
       await storage.deleteEmployee(empId);
       res.json({ success: true });
     } catch (error: any) {
