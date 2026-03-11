@@ -96,7 +96,7 @@ export default function PayslipModal({ payrollItem, employee, deductions, positi
     doc.text("PDAM TIRTA ARDHIA RINJANI", w / 2, 14, { align: "center" });
     doc.setFontSize(8);
     doc.setFont("helvetica", "normal");
-    doc.text("Jl. Langko No.1, Mataram, NTB", w / 2, 19, { align: "center" });
+    doc.text("Jl. Jend. A Yani No.11, Praya, Kec. Praya, Kab. Lombok Tengah, NTB 83511", w / 2, 19, { align: "center" });
 
     doc.setDrawColor(2, 132, 199);
     doc.setLineWidth(0.8);
@@ -269,7 +269,7 @@ export default function PayslipModal({ payrollItem, employee, deductions, positi
                     <img src="/images/logo.png" alt="Logo" style={{ width: 48, height: 48, objectFit: "contain" }} />
                     <div>
                       <div style={{ fontSize: 16, fontWeight: "bold", color: "#0284c7" }}>PDAM TIRTA ARDHIA RINJANI</div>
-                      <div style={{ fontSize: 9, color: "#666" }}>Jl. Langko No.1, Mataram, Nusa Tenggara Barat</div>
+                      <div style={{ fontSize: 9, color: "#666" }}>Jl. Jend. A Yani No.11, Praya, Kec. Praya, Kab. Lombok Tengah, NTB 83511</div>
                     </div>
                   </div>
                 </div>
