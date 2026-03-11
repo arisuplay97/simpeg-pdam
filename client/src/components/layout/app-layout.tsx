@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, CalendarCheck, FileText, DollarSign,
   BarChart3, ArrowLeftRight, GraduationCap, FolderOpen,
   Bell, ChevronLeft, ChevronRight, Sun, Moon, Search, Menu, X,
-  ClipboardList, LogOut, Shield, TrendingUp
+  ClipboardList, LogOut, Shield, TrendingUp, Clock
 } from "lucide-react";
 import logoPath from "@assets/Logo_Tirta_1773201248263.png";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,6 +24,7 @@ const menuItems = [
   { path: "/mutations", label: "Mutasi & Promosi", icon: ArrowLeftRight },
   { path: "/rank-promotions", label: "Kenaikan Pangkat", icon: Shield },
   { path: "/salary-increases", label: "Kenaikan Gaji", icon: TrendingUp },
+  { path: "/retirement", label: "Daftar Pensiun", icon: Clock },
   { path: "/trainings", label: "Pelatihan", icon: GraduationCap },
   { path: "/documents", label: "Dokumen", icon: FolderOpen },
   { path: "/reports", label: "Laporan", icon: ClipboardList },

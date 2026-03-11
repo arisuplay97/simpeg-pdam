@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { Link } from "wouter";
 import {
   Users, UserCheck, UserCog, Clock, AlertTriangle, FileText,
-  Calendar, DollarSign, TrendingUp, Bell, Activity, Shield, ArrowRight
+  Calendar, DollarSign, TrendingUp, Bell, Activity, Shield, ArrowRight, Timer
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -70,6 +70,19 @@ export default function Dashboard() {
   const pendingPromotions = rankPromotions.filter(rp => !["approved", "rejected"].includes(rp.status));
   const pendingSalaryIncreases = salaryIncreases.filter(si => !["approved", "rejected"].includes(si.status));
   const awaitingDirApproval = rankPromotions.filter(rp => rp.status === "approval_direktur");
+
+  const RETIREMENT_AGE = 58;
+  const retiringIn1Year = employees.filter(emp => {
+    if (emp.status !== "aktif" || !emp.birthDate) return false;
+    const birth = new Date(emp.birthDate);
+    const retDate = new Date(birth.getFullYear() + RETIREMENT_AGE, birth.getMonth(), birth.getDate());
+    const remainDays = Math.ceil((retDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+    return remainDays > 0 && remainDays <= 365;
+  }).sort((a, b) => {
+    const dA = new Date(new Date(a.birthDate!).getFullYear() + RETIREMENT_AGE, new Date(a.birthDate!).getMonth(), new Date(a.birthDate!).getDate());
+    const dB = new Date(new Date(b.birthDate!).getFullYear() + RETIREMENT_AGE, new Date(b.birthDate!).getMonth(), new Date(b.birthDate!).getDate());
+    return dA.getTime() - dB.getTime();
+  });
 
   const deptDistribution = employees.reduce((acc: any[], emp) => {
     const dept = emp.departmentId || 0;
@@ -301,6 +314,50 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {(user?.role === "direktur" || user?.role === "admin" || user?.role === "superadmin") && retiringIn1Year.length > 0 && (
+        <Card data-testid="card-retirement-widget">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-500" />
+              Pegawai Akan Pensiun
+              <Badge className="bg-amber-500 text-white text-[10px] ml-1">{retiringIn1Year.length}</Badge>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">{retiringIn1Year.length} pegawai akan pensiun dalam 1 tahun ke depan</p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 mb-3">
+              {retiringIn1Year.slice(0, 5).map((emp) => {
+                const birth = new Date(emp.birthDate!);
+                const retDate = new Date(birth.getFullYear() + RETIREMENT_AGE, birth.getMonth(), birth.getDate());
+                const remainDays = Math.ceil((retDate.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+                const isUrgent = remainDays <= 90;
+                return (
+                  <div key={emp.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50" data-testid={`retirement-widget-${emp.id}`}>
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isUrgent ? "bg-red-100 dark:bg-red-900/30" : "bg-amber-100 dark:bg-amber-900/30"}`}>
+                        <Clock className={`w-4 h-4 ${isUrgent ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{emp.fullName}</p>
+                        <p className="text-xs text-muted-foreground">Pensiun: {retDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                      </div>
+                    </div>
+                    <Badge variant={isUrgent ? "destructive" : "secondary"} className={`text-[11px] shrink-0 ${!isUrgent ? "bg-amber-500 hover:bg-amber-600 text-white" : ""}`}>
+                      {remainDays} hari
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+            <Link href="/retirement">
+              <button className="flex items-center gap-1 text-xs text-primary hover:underline" data-testid="link-view-all-retirement">
+                Lihat semua daftar pensiun <ArrowRight className="w-3 h-3" />
+              </button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
       {(user?.role === "direktur" || user?.role === "admin" || user?.role === "superadmin") && (awaitingDirApproval.length > 0 || pendingSalaryIncreases.length > 0) && (
         <Card>

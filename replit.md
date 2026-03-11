@@ -16,15 +16,17 @@ Web-based HR and operations management system for PDAM Tirta Ardhia Rinjani (reg
 ## Authentication
 - Session-based auth using express-session with PostgreSQL session store
 - Passwords hashed with bcryptjs
-- Three roles: `admin` (full access), `direktur` (Direktur Utama, approval authority), `pegawai` (employee access)
+- Four roles: `superadmin` (full access incl delete employees), `admin` (full access), `direktur` (Direktur Utama, approval authority), `pegawai` (employee access)
 - All API routes protected with `requireAuth` middleware
-- `requireDirektur` middleware for approval endpoints (allows admin + direktur)
+- `requireAdmin` middleware (allows admin + superadmin)
+- `requireDirektur` middleware for approval endpoints (allows admin + direktur + superadmin)
+- `requireSuperAdmin` middleware for destructive operations (superadmin only)
 - Auth routes: POST /api/auth/login, POST /api/auth/logout, GET /api/auth/me
-- Default accounts: admin/admin123, direktur/direktur123, doni.alga/pegawai123, siti.rahayu/pegawai123, bambang.purnomo/pegawai123
+- Default accounts: superadmin/superadmin123, admin/admin123, direktur/direktur123, doni.alga/pegawai123
 
 ## Key Features
-1. **Login Page** - Company logo image, 3 demo account buttons (Admin/Direktur/Pegawai), 350+ Pegawai stat
-2. **Dashboard** - Statistics cards, attendance charts, salary charts, department distribution, notifications, approval section for Direktur
+1. **Login Page** - Company logo image, 4 demo account buttons (SuperAdmin/Admin/Direktur/Pegawai)
+2. **Dashboard** - Statistics cards, attendance charts, salary charts, department distribution, notifications, retirement widget, approval section for Direktur
 3. **Employee Management** - Full CRUD, search/filter, employee detail with tabs
 4. **Attendance** - Daily tracking, check-in/out, lateness monitoring
 5. **Leave Management** - Request creation, approval workflow
@@ -36,7 +38,8 @@ Web-based HR and operations management system for PDAM Tirta Ardhia Rinjani (reg
 11. **Training** - Training program management
 12. **Documents** - Digital document management
 13. **Reports** - Consolidated reports
-14. **Dark/Light Mode** - Full theme support
+14. **Retirement Countdown** - Auto-calculated from birth date (58yr retirement age), retirement info card on employee profile, dedicated retirement list page with filters/export, dashboard widget, notification system with deduplication
+15. **Dark/Light Mode** - Full theme support
 
 ## File Structure
 ```
@@ -54,7 +57,8 @@ client/src/pages/
   login.tsx                - Login page with company logo
   dashboard.tsx            - Main dashboard with approval section
   employees.tsx            - Employee list
-  employee-detail.tsx      - Employee detail with tabs
+  employee-detail.tsx      - Employee detail with tabs + retirement info card
+  retirement.tsx           - Retirement countdown list page with filters/export
   attendance.tsx           - Attendance management
   leave.tsx                - Leave/permission management
   payroll.tsx              - Payroll with expandable deduction breakdown + Excel export

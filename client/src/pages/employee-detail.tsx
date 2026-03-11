@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Building2, GraduationCap, CreditCard, Heart } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Building2, GraduationCap, CreditCard, Heart, Clock, AlertTriangle } from "lucide-react";
 
 export default function EmployeeDetail() {
   const [, params] = useRoute("/employees/:id");
@@ -107,6 +107,8 @@ export default function EmployeeDetail() {
           </div>
         </CardContent>
       </Card>
+
+      {employee.birthDate && <RetirementCard birthDate={employee.birthDate} joinDate={employee.joinDate} />}
 
       <Tabs defaultValue="attendance" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
@@ -269,6 +271,84 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
       <Progress value={value} className="flex-1 h-2" />
       <span className="text-xs font-medium w-8 text-right">{value}</span>
     </div>
+  );
+}
+
+function RetirementCard({ birthDate, joinDate }: { birthDate: string; joinDate?: string | null }) {
+  const RETIREMENT_AGE = 58;
+  const birth = new Date(birthDate);
+  const retirementDate = new Date(birth.getFullYear() + RETIREMENT_AGE, birth.getMonth(), birth.getDate());
+  const now = new Date();
+
+  const ageMs = now.getTime() - birth.getTime();
+  const ageYears = Math.floor(ageMs / (365.25 * 24 * 60 * 60 * 1000));
+  const ageMonths = Math.floor((ageMs % (365.25 * 24 * 60 * 60 * 1000)) / (30.44 * 24 * 60 * 60 * 1000));
+
+  const isRetired = now >= retirementDate;
+  const remainMs = retirementDate.getTime() - now.getTime();
+  const remainDaysTotal = Math.max(0, Math.ceil(remainMs / (24 * 60 * 60 * 1000)));
+  const remainYears = Math.floor(remainDaysTotal / 365);
+  const remainMonths = Math.floor((remainDaysTotal % 365) / 30);
+  const remainDays = remainDaysTotal % 30;
+
+  const join = joinDate ? new Date(joinDate) : null;
+  const totalServiceMs = join ? retirementDate.getTime() - join.getTime() : 0;
+  const elapsedServiceMs = join ? now.getTime() - join.getTime() : 0;
+  const progressPct = totalServiceMs > 0 ? Math.min(100, Math.max(0, (elapsedServiceMs / totalServiceMs) * 100)) : 0;
+
+  const isUrgent = remainDaysTotal <= 365;
+  const borderColor = isRetired ? "border-red-500/50" : isUrgent ? "border-amber-500/50" : "border-border";
+
+  return (
+    <Card className={`border-2 ${borderColor}`} data-testid="card-retirement-info">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Clock className="w-4 h-4 text-primary" />
+          Info Pensiun
+          {isRetired && <Badge variant="destructive" className="text-[10px]">Sudah Pensiun</Badge>}
+          {!isRetired && isUrgent && <Badge className="bg-amber-500 text-white text-[10px]">Segera Pensiun</Badge>}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+            <p className="text-[11px] text-muted-foreground font-medium mb-1">Tanggal Lahir</p>
+            <p className="text-sm font-semibold" data-testid="text-birth-date">
+              {birth.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+            <p className="text-[11px] text-muted-foreground font-medium mb-1">Tanggal Pensiun</p>
+            <p className="text-sm font-semibold" data-testid="text-retirement-date">
+              {retirementDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+            </p>
+          </div>
+          <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
+            <p className="text-[11px] text-muted-foreground font-medium mb-1">Usia Saat Ini</p>
+            <p className="text-sm font-semibold" data-testid="text-current-age">{ageYears} tahun {ageMonths} bulan</p>
+          </div>
+          <div className={`p-3 rounded-lg border ${isRetired ? "bg-red-500/10 border-red-500/30" : isUrgent ? "bg-amber-500/10 border-amber-500/30" : "bg-muted/30 border-border/50"}`}>
+            <p className="text-[11px] text-muted-foreground font-medium mb-1">Sisa Waktu Pensiun</p>
+            <p className={`text-sm font-semibold ${isRetired ? "text-red-600 dark:text-red-400" : isUrgent ? "text-amber-600 dark:text-amber-400" : ""}`} data-testid="text-retirement-countdown">
+              {isRetired ? "Sudah melewati masa pensiun" : `${remainYears} tahun ${remainMonths} bulan ${remainDays} hari lagi`}
+            </p>
+          </div>
+        </div>
+        {join && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs text-muted-foreground">Progress Masa Kerja</p>
+              <p className="text-xs font-medium">{progressPct.toFixed(1)}%</p>
+            </div>
+            <Progress value={progressPct} className="h-2.5" />
+            <div className="flex justify-between mt-1.5">
+              <p className="text-[10px] text-muted-foreground">Mulai: {join.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}</p>
+              <p className="text-[10px] text-muted-foreground">Pensiun: {retirementDate.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}</p>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

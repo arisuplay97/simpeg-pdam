@@ -21,6 +21,7 @@ import DocumentsPage from "@/pages/documents";
 import ReportsPage from "@/pages/reports";
 import RankPromotionsPage from "@/pages/rank-promotions";
 import SalaryIncreasesPage from "@/pages/salary-increases";
+import RetirementPage from "@/pages/retirement";
 import NotFound from "@/pages/not-found";
 import { Loader2 } from "lucide-react";
 
@@ -42,6 +43,7 @@ function AuthenticatedRoutes() {
         <Route path="/reports" component={ReportsPage} />
         <Route path="/rank-promotions" component={RankPromotionsPage} />
         <Route path="/salary-increases" component={SalaryIncreasesPage} />
+        <Route path="/retirement" component={RetirementPage} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>

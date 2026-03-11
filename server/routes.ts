@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { hashPassword, comparePassword, requireAuth, requireDirektur, requireSuperAdmin } from "./auth";
+import { hashPassword, comparePassword, requireAuth, requireAdmin, requireDirektur, requireSuperAdmin } from "./auth";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -87,6 +87,7 @@ export async function registerRoutes(
   app.use("/api/notifications", requireAuth);
   app.use("/api/rank-promotions", requireAuth);
   app.use("/api/salary-increases", requireAuth);
+  app.use("/api/retirement", requireAuth);
   app.use("/api/approval-logs", requireAuth);
   app.use("/api/eligible-promotions", requireAuth);
   app.use("/api/eligible-salary-increases", requireAuth);
@@ -386,6 +387,66 @@ export async function registerRoutes(
   app.put("/api/notifications/:id/read", async (req, res) => {
     await storage.markNotificationRead(parseInt(req.params.id));
     res.json({ success: true });
+  });
+
+  app.post("/api/retirement/check-notifications", requireAdmin, async (_req, res) => {
+    try {
+      const allEmployees = await storage.getEmployees();
+      const existingNotifs = await storage.getNotifications();
+      const RETIREMENT_AGE = 58;
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      const createdNotifs: string[] = [];
+
+      for (const emp of allEmployees) {
+        if (emp.status !== "aktif" || !emp.birthDate) continue;
+        const birth = new Date(emp.birthDate);
+        const retDate = new Date(birth.getFullYear() + RETIREMENT_AGE, birth.getMonth(), birth.getDate());
+        const remainDays = Math.ceil((retDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+        if (remainDays <= 0) continue;
+
+        let shouldNotify = false;
+        let urgency = "";
+
+        if (remainDays <= 7) {
+          shouldNotify = true;
+          urgency = "URGENT";
+        } else if (remainDays <= 30) {
+          shouldNotify = true;
+          urgency = "SEGERA";
+        } else if (remainDays <= 90) {
+          shouldNotify = true;
+          urgency = "H-3 Bulan";
+        } else if (remainDays <= 180) {
+          shouldNotify = true;
+          urgency = "H-6 Bulan";
+        } else if (remainDays <= 365) {
+          shouldNotify = true;
+          urgency = "H-1 Tahun";
+        }
+
+        if (shouldNotify) {
+          const dedupeKey = `Pensiun: ${emp.fullName}`;
+          const alreadyNotified = existingNotifs.some(n =>
+            n.title.includes(dedupeKey) &&
+            n.createdAt && new Date(n.createdAt).toISOString().slice(0, 10) === today
+          );
+          if (alreadyNotified) continue;
+
+          const retDateStr = retDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+          await storage.createNotification({
+            title: `[${urgency}] Pensiun: ${emp.fullName}`,
+            message: `${emp.fullName} (${emp.nip}) akan pensiun pada ${retDateStr} (${remainDays} hari lagi)`,
+            type: remainDays <= 90 ? "urgent" : "warning",
+            link: `/employees/${emp.id}`,
+          });
+          createdNotifs.push(`${emp.fullName} - ${remainDays} hari`);
+        }
+      }
+      res.json({ success: true, notificationsCreated: createdNotifs.length, details: createdNotifs });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   });
 
   app.get("/api/rank-promotions", async (_req, res) => {
