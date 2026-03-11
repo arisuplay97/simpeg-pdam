@@ -1,7 +1,7 @@
 # PDAM Tirta Ardhia Rinjani - Sistem Kepegawaian
 
 ## Overview
-Web-based HR and operations management system for PDAM Tirta Ardhia Rinjani (regional water utility company). Modern SaaS-style enterprise dashboard with comprehensive employee management, attendance tracking, payroll with detailed deduction breakdown, finance, performance evaluation, rank promotion workflow, and salary increase management.
+Web-based HR and operations management system for PDAM Tirta Ardhia Rinjani (regional water utility company). Modern SaaS-style enterprise dashboard with comprehensive employee management, attendance tracking, payroll with detailed deduction breakdown, Excel export, performance evaluation, rank promotion workflow, and salary increase management.
 
 ## Architecture
 - **Frontend**: React + TypeScript + Vite + TailwindCSS + shadcn/ui
@@ -11,6 +11,7 @@ Web-based HR and operations management system for PDAM Tirta Ardhia Rinjani (reg
 - **Charts**: Recharts
 - **Routing**: wouter
 - **State Management**: TanStack Query v5
+- **Excel**: xlsx (SheetJS) for Excel export
 
 ## Authentication
 - Session-based auth using express-session with PostgreSQL session store
@@ -27,16 +28,15 @@ Web-based HR and operations management system for PDAM Tirta Ardhia Rinjani (reg
 3. **Employee Management** - Full CRUD, search/filter, employee detail with tabs
 4. **Attendance** - Daily tracking, check-in/out, lateness monitoring
 5. **Leave Management** - Request creation, approval workflow
-6. **Payroll** - Expandable salary breakdown with detailed deduction items (BPJS Kes 1%, BPJS TK 2%, PPh21, Iuran Pensiun, Pinjaman, Koperasi, Disiplin), custom deduction support per employee, earnings vs deductions breakdown, distribution charts
-7. **Finance** - Cash flow dashboard, income/expense tracking
-8. **Performance** - KPI scoring, progress bars
-9. **Mutations** - Transfer, promotion, demotion management
-10. **Kenaikan Pangkat** - 4-year rank promotion cycle with multi-step approval workflow (Diajukan→Review HRD→Review Kabag→Approval Direktur→Berlaku), eligible employee detection
-11. **Kenaikan Gaji** - 2-year salary increase cycle with performance-based calculation, approval workflow
-12. **Training** - Training program management
-13. **Documents** - Digital document management
-14. **Reports** - Consolidated reports
-15. **Dark/Light Mode** - Full theme support
+6. **Payroll** - Expandable salary breakdown with detailed deduction items, custom deduction support, Excel export with filters (period/dept/status), distribution charts
+7. **Performance** - KPI scoring, progress bars
+8. **Mutations** - Transfer, promotion, demotion management
+9. **Kenaikan Pangkat** - 4-year rank promotion cycle with multi-step approval workflow
+10. **Kenaikan Gaji** - 2-year salary increase cycle with performance-based calculation, approval workflow
+11. **Training** - Training program management
+12. **Documents** - Digital document management
+13. **Reports** - Consolidated reports
+14. **Dark/Light Mode** - Full theme support
 
 ## File Structure
 ```
@@ -57,8 +57,7 @@ client/src/pages/
   employee-detail.tsx      - Employee detail with tabs
   attendance.tsx           - Attendance management
   leave.tsx                - Leave/permission management
-  payroll.tsx              - Payroll with expandable deduction breakdown
-  finance.tsx              - Financial transactions
+  payroll.tsx              - Payroll with expandable deduction breakdown + Excel export
   performance.tsx          - Performance reviews
   mutations.tsx            - Mutations/promotions
   rank-promotions.tsx      - Kenaikan pangkat (4yr cycle, multi-step approval)
@@ -69,7 +68,7 @@ client/src/pages/
 ```
 
 ## Database Tables
-departments, positions, employees, attendance, leave_requests, payroll, payroll_deductions, finance_transactions, performance_reviews, mutations, trainings, documents, notifications, users, rank_promotions, salary_increases, payslip_logs, approval_logs
+departments, positions, employees, attendance, leave_requests, payroll, payroll_deductions, performance_reviews, mutations, trainings, documents, notifications, users, rank_promotions, salary_increases, payslip_logs, approval_logs, export_logs
 
 ## Payroll Deduction System
 - **payroll** table has individual deduction columns: bpjs_kesehatan_deduction (1%), bpjs_ketenagakerjaan_deduction (2%), pph21_deduction, pension_deduction (1%), loan_deduction, cooperative_deduction, discipline_deduction
@@ -77,6 +76,13 @@ departments, positions, employees, attendance, leave_requests, payroll, payroll_
 - Types: bpjs_kesehatan, bpjs_ketenagakerjaan, pph21, iuran_pensiun, pinjaman, koperasi, disiplin, custom
 - Admin/HRD can add custom deductions per employee per period
 - API: GET /api/payroll/:id/deductions, POST /api/payroll/:id/deductions, DELETE /api/payroll-deductions/:id
+
+## Payroll Excel Export
+- ExportExcelDialog in payroll.tsx with period/department/status filters
+- Uses xlsx (SheetJS) library for client-side Excel generation
+- Formatted output: title header, color-coded columns (green=earnings, red=deductions, yellow=net salary), totals row
+- Only accessible by admin and direktur roles (requireDirektur middleware)
+- All exports logged in export_logs table via POST /api/export-logs
 
 ## Slip Gaji (Payslip) Feature
 - **PayslipModal** component (`client/src/components/payslip-modal.tsx`) renders via React Portal on document.body

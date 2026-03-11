@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import type { Notification } from "@shared/schema";
 import {
   LayoutDashboard, Users, CalendarCheck, FileText, DollarSign,
-  Wallet, BarChart3, ArrowLeftRight, GraduationCap, FolderOpen,
+  BarChart3, ArrowLeftRight, GraduationCap, FolderOpen,
   Bell, ChevronLeft, ChevronRight, Sun, Moon, Search, Menu, X,
   ClipboardList, LogOut, Droplets, Shield, TrendingUp
 } from "lucide-react";
@@ -18,7 +18,7 @@ const menuItems = [
   { path: "/attendance", label: "Absensi", icon: CalendarCheck },
   { path: "/leave", label: "Cuti & Izin", icon: FileText },
   { path: "/payroll", label: "Penggajian", icon: DollarSign },
-  { path: "/finance", label: "Keuangan", icon: Wallet },
+
   { path: "/performance", label: "Kinerja", icon: BarChart3 },
   { path: "/mutations", label: "Mutasi & Promosi", icon: ArrowLeftRight },
   { path: "/rank-promotions", label: "Kenaikan Pangkat", icon: Shield },

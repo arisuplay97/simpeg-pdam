@@ -13,7 +13,7 @@ import EmployeeDetail from "@/pages/employee-detail";
 import AttendancePage from "@/pages/attendance";
 import LeavePage from "@/pages/leave";
 import PayrollPage from "@/pages/payroll";
-import FinancePage from "@/pages/finance";
+
 import PerformancePage from "@/pages/performance";
 import MutationsPage from "@/pages/mutations";
 import TrainingsPage from "@/pages/trainings";
@@ -34,7 +34,7 @@ function AuthenticatedRoutes() {
         <Route path="/attendance" component={AttendancePage} />
         <Route path="/leave" component={LeavePage} />
         <Route path="/payroll" component={PayrollPage} />
-        <Route path="/finance" component={FinancePage} />
+
         <Route path="/performance" component={PerformancePage} />
         <Route path="/mutations" component={MutationsPage} />
         <Route path="/trainings" component={TrainingsPage} />

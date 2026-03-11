@@ -79,7 +79,7 @@ export async function registerRoutes(
   app.use("/api/attendance", requireAuth);
   app.use("/api/leave-requests", requireAuth);
   app.use("/api/payroll", requireAuth);
-  app.use("/api/finance", requireAuth);
+
   app.use("/api/performance", requireAuth);
   app.use("/api/mutations", requireAuth);
   app.use("/api/trainings", requireAuth);
@@ -292,17 +292,22 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/finance", async (_req, res) => {
-    const data = await storage.getFinanceTransactions();
-    res.json(data);
-  });
-  app.post("/api/finance", async (req, res) => {
-    const data = await storage.createFinanceTransaction(req.body);
-    res.json(data);
-  });
-  app.put("/api/finance/:id", async (req, res) => {
-    const data = await storage.updateFinanceTransaction(parseInt(req.params.id), req.body);
-    res.json(data);
+  app.post("/api/export-logs", requireDirektur, async (req, res) => {
+    try {
+      const userId = req.session.userId;
+      const sessionUser = userId ? await storage.getUserById(userId) : null;
+      const log = await storage.createExportLog({
+        exportType: req.body.exportType || "payroll_excel",
+        period: req.body.period || null,
+        filters: req.body.filters || null,
+        performedBy: sessionUser?.username || "unknown",
+        performedByName: sessionUser?.role || "unknown",
+        ipAddress: req.ip || null,
+      });
+      res.json(log);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   });
 
   app.get("/api/performance", async (_req, res) => {

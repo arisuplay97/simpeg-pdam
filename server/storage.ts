@@ -4,10 +4,10 @@ import {
   departments, positions, employees, attendance, leaveRequests,
   payroll, payrollDeductions, financeTransactions, performanceReviews, mutations,
   trainings, documents, notifications, users,
-  rankPromotions, salaryIncreases, payslipLogs, approvalLogs,
+  rankPromotions, salaryIncreases, payslipLogs, approvalLogs, exportLogs,
   type InsertDepartment, type InsertPosition, type InsertEmployee,
   type InsertAttendance, type InsertLeaveRequest, type InsertPayroll,
-  type InsertPayrollDeduction, type InsertPayslipLog,
+  type InsertPayrollDeduction, type InsertPayslipLog, type InsertExportLog,
   type InsertFinanceTransaction, type InsertPerformanceReview,
   type InsertMutation, type InsertTraining, type InsertDocument,
   type InsertNotification, type InsertUser,
@@ -16,7 +16,7 @@ import {
   type LeaveRequest, type Payroll, type PayrollDeduction, type FinanceTransaction,
   type PerformanceReview, type Mutation, type Training, type Document,
   type Notification, type User,
-  type RankPromotion, type SalaryIncrease, type PayslipLog, type ApprovalLog,
+  type RankPromotion, type SalaryIncrease, type PayslipLog, type ApprovalLog, type ExportLog,
 } from "@shared/schema";
 
 export const storage = {
@@ -249,6 +249,11 @@ export const storage = {
   },
   async createApprovalLog(data: InsertApprovalLog): Promise<ApprovalLog> {
     const [result] = await db.insert(approvalLogs).values(data).returning();
+    return result;
+  },
+
+  async createExportLog(data: InsertExportLog): Promise<ExportLog> {
+    const [result] = await db.insert(exportLogs).values(data).returning();
     return result;
   },
 

@@ -252,6 +252,17 @@ export const approvalLogs = pgTable("approval_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const exportLogs = pgTable("export_logs", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  exportType: text("export_type").notNull(),
+  period: text("period"),
+  filters: text("filters"),
+  performedBy: text("performed_by").notNull(),
+  performedByName: text("performed_by_name"),
+  ipAddress: text("ip_address"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertDepartmentSchema = createInsertSchema(departments).omit({ id: true });
 export const insertPositionSchema = createInsertSchema(positions).omit({ id: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
@@ -270,6 +281,7 @@ export const insertRankPromotionSchema = createInsertSchema(rankPromotions).omit
 export const insertSalaryIncreaseSchema = createInsertSchema(salaryIncreases).omit({ id: true, createdAt: true, approvedAt: true });
 export const insertPayslipLogSchema = createInsertSchema(payslipLogs).omit({ id: true, createdAt: true });
 export const insertApprovalLogSchema = createInsertSchema(approvalLogs).omit({ id: true, createdAt: true });
+export const insertExportLogSchema = createInsertSchema(exportLogs).omit({ id: true, createdAt: true });
 
 export type Department = typeof departments.$inferSelect;
 export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
@@ -307,3 +319,5 @@ export type PayslipLog = typeof payslipLogs.$inferSelect;
 export type InsertPayslipLog = z.infer<typeof insertPayslipLogSchema>;
 export type ApprovalLog = typeof approvalLogs.$inferSelect;
 export type InsertApprovalLog = z.infer<typeof insertApprovalLogSchema>;
+export type ExportLog = typeof exportLogs.$inferSelect;
+export type InsertExportLog = z.infer<typeof insertExportLogSchema>;

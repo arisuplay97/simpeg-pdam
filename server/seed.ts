@@ -261,7 +261,7 @@ export async function seedDatabase() {
     { title: "Kontrak Hampir Berakhir", message: "Kontrak Dewi Anggraini berakhir dalam 30 hari", type: "warning", link: "/employees" },
     { title: "Pelatihan K3", message: "Pelatihan K3 akan dilaksanakan pada 20-21 Maret 2026", type: "training", link: "/trainings" },
     { title: "Evaluasi Kinerja Q4", message: "Periode penilaian kinerja Q4 2025 telah selesai", type: "performance", link: "/performance" },
-    { title: "Pembayaran Listrik Pending", message: "Pembayaran listrik bulan Maret menunggu persetujuan", type: "finance", link: "/finance" },
+    { title: "Laporan Absensi Terlambat", message: "3 pegawai terlambat lebih dari 3 kali bulan ini", type: "warning", link: "/attendance" },
     { title: "Kenaikan Pangkat Menunggu Approval", message: "I Gede Oka Wirawan menunggu approval Direktur untuk kenaikan pangkat II/a ke II/b", type: "warning", link: "/rank-promotions" },
     { title: "Kenaikan Pangkat Dalam Review", message: "Hj. Fatimah Azzahra sedang dalam proses review HRD untuk kenaikan pangkat III/d ke IV/a", type: "warning", link: "/rank-promotions" },
     { title: "Kenaikan Gaji Berkala Pending", message: "Pengajuan kenaikan gaji berkala Muh. Rizki Pratama menunggu persetujuan", type: "warning", link: "/salary-increases" },

@@ -1,14 +1,16 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { Payroll, Employee, PayrollDeduction, Position, Department } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DollarSign, TrendingUp, TrendingDown, Wallet, Search, ChevronDown, ChevronRight, Plus, Trash2, X, FileText } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DollarSign, TrendingUp, TrendingDown, Wallet, Search, ChevronDown, ChevronRight, Plus, Trash2, X, FileText, Download } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import PayslipModal from "@/components/payslip-modal";
 
 const formatRp = (val: string | number | null) => {
@@ -233,8 +235,289 @@ function DeductionRow({ payrollItem, employees, positions, departments }: { payr
   );
 }
 
+const BULAN_NAMES = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+function ExportExcelDialog({
+  open,
+  onClose,
+  payrollData,
+  employees,
+  positions,
+  departments,
+}: {
+  open: boolean;
+  onClose: () => void;
+  payrollData: Payroll[];
+  employees: Employee[];
+  positions: Position[];
+  departments: Department[];
+}) {
+  const [expMonth, setExpMonth] = useState(String(new Date().getMonth() + 1));
+  const [expYear, setExpYear] = useState(String(new Date().getFullYear()));
+  const [expDept, setExpDept] = useState("all");
+  const [expStatus, setExpStatus] = useState("all");
+  const [exporting, setExporting] = useState(false);
+  const { toast } = useToast();
+
+  const handleExport = useCallback(async () => {
+    setExporting(true);
+    try {
+      const XLSX = await import("xlsx");
+
+      const periodStr = `${BULAN_NAMES[parseInt(expMonth) - 1]} ${expYear}`;
+      const periodFilter = `${expYear}-${expMonth.padStart(2, "0")}`;
+
+      let filtered = payrollData.filter(p => p.period?.startsWith(periodFilter));
+
+      if (expDept !== "all") {
+        filtered = filtered.filter(p => {
+          const emp = employees.find(e => e.id === p.employeeId);
+          return emp?.departmentId === parseInt(expDept);
+        });
+      }
+
+      if (expStatus !== "all") {
+        filtered = filtered.filter(p => {
+          const emp = employees.find(e => e.id === p.employeeId);
+          return emp?.employeeType === expStatus;
+        });
+      }
+
+      if (filtered.length === 0) {
+        toast({ title: "Tidak ada data", description: "Tidak ada data penggajian untuk filter yang dipilih", variant: "destructive" });
+        setExporting(false);
+        return;
+      }
+
+      const allDeductions: Record<number, any[]> = {};
+      await Promise.all(
+        filtered.map(async (p) => {
+          try {
+            const res = await fetch(`/api/payroll/${p.id}/deductions`, { credentials: "include" });
+            if (res.ok) allDeductions[p.id] = await res.json();
+          } catch { /* skip */ }
+        })
+      );
+
+      const rows: any[][] = [];
+
+      rows.push(["REKAPITULASI GAJI PDAM TIRTA ARDHIA RINJANI"]);
+      rows.push([`Periode: ${periodStr}`]);
+      rows.push([]);
+
+      const headers = [
+        "No", "NIP", "Nama", "Bagian", "Jabatan", "Status",
+        "Gaji Pokok", "Tunj. Jabatan", "Tunj. Keluarga",
+        "Tunj. Transport", "Tunj. Makan", "Lembur", "Insentif",
+        "Total Penghasilan",
+        "BPJS Kesehatan", "BPJS Ketenagakerjaan",
+        "Iuran Pensiun", "Koperasi", "Pinjaman", "PPh21",
+        "Total Potongan",
+        "GAJI BERSIH",
+      ];
+      rows.push(headers);
+
+      const totals = new Array(headers.length).fill(0);
+
+      filtered.forEach((p, idx) => {
+        const emp = employees.find(e => e.id === p.employeeId);
+        const pos = positions.find(ps => ps.id === emp?.positionId);
+        const dept = departments.find(d => d.id === emp?.departmentId);
+        const deds = allDeductions[p.id] || [];
+
+        const findDed = (type: string) => {
+          const d = deds.find((dd: any) => dd.type === type);
+          return d ? Number(d.amount) : 0;
+        };
+
+        const gajiPokok = Number(p.basicSalary);
+        const tunjJabatan = Number(p.positionAllowance);
+        const tunjKeluarga = Number(p.familyAllowance);
+        const tunjTransport = Number(p.transportAllowance);
+        const tunjMakan = Number(p.mealAllowance);
+        const lembur = Number(p.overtime);
+        const insentif = Number(p.incentive);
+        const totalPenghasilan = Number(p.totalEarnings);
+
+        const bpjsKes = findDed("bpjs_kesehatan");
+        const bpjsTk = findDed("bpjs_ketenagakerjaan");
+        const pensiun = findDed("iuran_pensiun");
+        const koperasi = findDed("koperasi");
+        const pinjaman = findDed("pinjaman");
+        const pph21 = findDed("pph21");
+        const totalPotongan = Number(p.totalDeductions);
+        const gajiBersih = Number(p.netSalary);
+
+        const row = [
+          idx + 1,
+          emp?.nip || "",
+          emp?.fullName || "",
+          dept?.name || "",
+          pos?.name || "",
+          emp?.employeeType || "",
+          gajiPokok, tunjJabatan, tunjKeluarga,
+          tunjTransport, tunjMakan, lembur, insentif,
+          totalPenghasilan,
+          bpjsKes, bpjsTk,
+          pensiun, koperasi, pinjaman, pph21,
+          totalPotongan,
+          gajiBersih,
+        ];
+        rows.push(row);
+
+        for (let c = 6; c < row.length; c++) {
+          totals[c] = (totals[c] || 0) + (Number(row[c]) || 0);
+        }
+      });
+
+      const totalRow = new Array(headers.length).fill("");
+      totalRow[0] = "";
+      totalRow[1] = "";
+      totalRow[2] = "TOTAL";
+      for (let c = 6; c < headers.length; c++) {
+        totalRow[c] = totals[c];
+      }
+      rows.push(totalRow);
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+
+      ws["!merges"] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: headers.length - 1 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: headers.length - 1 } },
+      ];
+
+      const colWidths = headers.map((h, i) => {
+        if (i === 0) return { wch: 4 };
+        if (i === 1) return { wch: 14 };
+        if (i === 2) return { wch: 25 };
+        if (i === 3) return { wch: 18 };
+        if (i === 4) return { wch: 20 };
+        if (i === 5) return { wch: 10 };
+        return { wch: 16 };
+      });
+      ws["!cols"] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Rekap Gaji");
+      XLSX.writeFile(wb, `Rekap_Gaji_${periodStr.replace(" ", "_")}.xlsx`);
+
+      const deptName = expDept === "all" ? "Semua" : departments.find(d => d.id === parseInt(expDept))?.name || expDept;
+      const statusName = expStatus === "all" ? "Semua" : expStatus;
+      await apiRequest("POST", "/api/export-logs", {
+        exportType: "payroll_excel",
+        period: periodStr,
+        filters: JSON.stringify({ department: deptName, status: statusName, count: filtered.length }),
+      });
+
+      toast({ title: "Export Berhasil", description: `File Excel berhasil diunduh (${filtered.length} data)` });
+      onClose();
+    } catch (err: any) {
+      toast({ title: "Export Gagal", description: err.message || "Terjadi kesalahan", variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  }, [expMonth, expYear, expDept, expStatus, payrollData, employees, positions, departments, onClose, toast]);
+
+  if (!open) return null;
+
+  const years: string[] = [];
+  const currentYear = new Date().getFullYear();
+  for (let y = currentYear - 2; y <= currentYear + 1; y++) years.push(String(y));
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-card border border-border rounded-xl shadow-2xl w-full max-w-md mx-4 p-6"
+        onClick={e => e.stopPropagation()}
+        data-testid="dialog-export-excel"
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-bold">Export Excel Penggajian</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground" data-testid="btn-close-export">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Bulan</label>
+              <Select value={expMonth} onValueChange={setExpMonth}>
+                <SelectTrigger data-testid="select-export-month"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {BULAN_NAMES.map((b, i) => (
+                    <SelectItem key={i} value={String(i + 1)}>{b}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Tahun</label>
+              <Select value={expYear} onValueChange={setExpYear}>
+                <SelectTrigger data-testid="select-export-year"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {years.map(y => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Bagian / Divisi</label>
+            <Select value={expDept} onValueChange={setExpDept}>
+              <SelectTrigger data-testid="select-export-dept"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Bagian</SelectItem>
+                {departments.map(d => (
+                  <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Status Pegawai</label>
+            <Select value={expStatus} onValueChange={setExpStatus}>
+              <SelectTrigger data-testid="select-export-status"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Status</SelectItem>
+                <SelectItem value="tetap">Tetap</SelectItem>
+                <SelectItem value="kontrak">Kontrak</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className="flex-1 h-10 rounded-lg border border-border text-sm font-medium hover:bg-muted transition-colors"
+            data-testid="btn-cancel-export"
+          >
+            Batal
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex-1 h-10 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            data-testid="btn-confirm-export"
+          >
+            <Download className="w-4 h-4" />
+            {exporting ? "Mengunduh..." : "Export Excel"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function PayrollPage() {
   const [search, setSearch] = useState("");
+  const [showExport, setShowExport] = useState(false);
+  const { user } = useAuth();
+  const canExport = user?.role === "admin" || user?.role === "direktur";
 
   const { data: payrollData = [], isLoading } = useQuery<Payroll[]>({
     queryKey: ["/api/payroll"],
@@ -279,9 +562,21 @@ export default function PayrollPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight" data-testid="text-page-title">Penggajian</h1>
-        <p className="text-sm text-muted-foreground mt-1">Kelola slip gaji dan komponen penggajian pegawai — klik baris untuk melihat rincian</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight" data-testid="text-page-title">Penggajian</h1>
+          <p className="text-sm text-muted-foreground mt-1">Kelola slip gaji dan komponen penggajian pegawai — klik baris untuk melihat rincian</p>
+        </div>
+        {canExport && (
+          <button
+            onClick={() => setShowExport(true)}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm"
+            data-testid="btn-export-excel"
+          >
+            <Download className="w-4 h-4" />
+            Export Excel
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -358,6 +653,17 @@ export default function PayrollPage() {
           )}
         </CardContent>
       </Card>
+
+      {canExport && (
+        <ExportExcelDialog
+          open={showExport}
+          onClose={() => setShowExport(false)}
+          payrollData={payrollData}
+          employees={employees}
+          positions={positions}
+          departments={departments}
+        />
+      )}
     </div>
   );
 }
