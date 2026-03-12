@@ -21,6 +21,10 @@ export default function EmployeeDetail() {
   const employeeId = params?.id ? parseInt(params.id) : 0;
   const [showEdit, setShowEdit] = useState(false);
   const [showCreateUser, setShowCreateUser] = useState(false);
+  const [showDocUpload, setShowDocUpload] = useState(false);
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [docTitle, setDocTitle] = useState("");
+  const [docCategory, setDocCategory] = useState("SK Pengangkatan");
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "superadmin";
@@ -197,10 +201,19 @@ export default function EmployeeDetail() {
               <InfoItem icon={MapPin} label="Alamat" value={employee.address || "—"} />
               <InfoItem icon={Heart} label="Status Nikah" value={employee.maritalStatus || "—"} />
               <InfoItem icon={CreditCard} label="Bank" value={`${employee.bankName || "—"} · ${employee.bankAccount || "—"}`} />
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <Badge variant={employee.status === "aktif" ? "default" : "secondary"}>{employee.status}</Badge>
                 <Badge variant="outline">{employee.employeeType}</Badge>
                 {employee.grade && <Badge variant="outline">Gol. {employee.grade}</Badge>}
+                {employee.spWarning && (
+                  <Badge className={`text-[10px] border-transparent ${
+                    employee.spWarning === 'SP-1' ? 'bg-gray-500 hover:bg-gray-600 text-white' :
+                    employee.spWarning === 'SP-2' ? 'bg-yellow-500 hover:bg-yellow-600 text-black' :
+                    'bg-red-600 hover:bg-red-700 text-white'
+                  }`}>
+                    ⚠ {employee.spWarning}
+                  </Badge>
+                )}
               </div>
             </div>
           </div>
@@ -271,11 +284,28 @@ export default function EmployeeDetail() {
                       </div>
                       <p className="text-lg font-bold text-primary">{formatCurrency(p.netSalary)}</p>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-3">
                       <div><span className="text-muted-foreground">Gaji Pokok</span><p className="font-medium">{formatCurrency(p.basicSalary)}</p></div>
-                      <div><span className="text-muted-foreground">Tunjangan</span><p className="font-medium">{formatCurrency(p.positionAllowance)}</p></div>
+                      <div><span className="text-muted-foreground">Tunj. Jabatan</span><p className="font-medium">{formatCurrency(p.positionAllowance)}</p></div>
+                      <div><span className="text-muted-foreground">Tunj. Keluarga</span><p className="font-medium">{formatCurrency(p.familyAllowance)}</p></div>
+                      <div><span className="text-muted-foreground">Tunj. Transport</span><p className="font-medium">{formatCurrency(p.transportAllowance)}</p></div>
+                      <div><span className="text-muted-foreground">Tunj. Makan</span><p className="font-medium">{formatCurrency(p.mealAllowance)}</p></div>
+                      <div><span className="text-muted-foreground">Lembur</span><p className="font-medium">{formatCurrency(p.overtime)}</p></div>
+                      <div><span className="text-muted-foreground">Insentif</span><p className="font-medium">{formatCurrency(p.incentive)}</p></div>
                       <div><span className="text-muted-foreground">Total Pendapatan</span><p className="font-medium text-emerald-600">{formatCurrency(p.totalEarnings)}</p></div>
-                      <div><span className="text-muted-foreground">Total Potongan</span><p className="font-medium text-red-500">{formatCurrency(p.totalDeductions)}</p></div>
+                    </div>
+                    <div className="border-t border-border/50 pt-3">
+                      <p className="text-xs font-semibold text-muted-foreground mb-2">Rincian Potongan</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                        <div><span className="text-muted-foreground">BPJS Kesehatan</span><p className="font-medium text-red-500">{formatCurrency(p.bpjsKesehatanDeduction)}</p></div>
+                        <div><span className="text-muted-foreground">BPJS TK</span><p className="font-medium text-red-500">{formatCurrency(p.bpjsKetenagakerjaanDeduction)}</p></div>
+                        <div><span className="text-muted-foreground">PPh 21</span><p className="font-medium text-red-500">{formatCurrency(p.pph21Deduction)}</p></div>
+                        <div><span className="text-muted-foreground">Pensiun</span><p className="font-medium text-red-500">{formatCurrency(p.pensionDeduction)}</p></div>
+                        <div><span className="text-muted-foreground">Pinjaman</span><p className="font-medium text-red-500">{formatCurrency(p.loanDeduction)}</p></div>
+                        <div><span className="text-muted-foreground">Iuran Koperasi</span><p className="font-medium text-red-500">{formatCurrency(p.cooperativeDeduction)}</p></div>
+                        <div><span className="text-muted-foreground">Pot. Disiplin</span><p className="font-medium text-red-500">{formatCurrency(p.disciplineDeduction)}</p></div>
+                        <div><span className="text-muted-foreground font-semibold">Total Potongan</span><p className="font-bold text-red-600">{formatCurrency(p.totalDeductions)}</p></div>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -368,27 +398,9 @@ export default function EmployeeDetail() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base flex items-center gap-2"><FolderOpen className="w-4 h-4" /> Dokumen SK & Berkas</CardTitle>
                 {isAdmin && (
-                  <label className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer">
+                  <Button size="sm" className="gap-1.5 text-xs" onClick={() => { setShowDocUpload(true); setDocFile(null); setDocTitle(""); setDocCategory("SK Pengangkatan"); }}>
                     <Upload className="w-3.5 h-3.5" /> Upload Dokumen
-                    <input type="file" accept="application/pdf,image/*" className="hidden" onChange={async (e) => {
-                      const file = e.target.files?.[0];
-                      if (!file) return;
-                      const title = prompt("Judul dokumen:", file.name);
-                      if (!title) return;
-                      const category = prompt("Kategori (SK Pengangkatan/SK Kenaikan Pangkat/SK Mutasi/Lainnya):", "SK Pengangkatan");
-                      const formData = new FormData();
-                      formData.append('document', file);
-                      formData.append('title', title);
-                      formData.append('category', category || 'SK');
-                      try {
-                        const res = await fetch(`/api/employees/${employee.id}/documents`, { method: 'POST', body: formData, credentials: 'include' });
-                        if (res.ok) {
-                          queryClient.invalidateQueries({ queryKey: ["/api/documents/employee", employeeId] });
-                          toast({ title: "Dokumen berhasil diupload" });
-                        }
-                      } catch { toast({ title: "Gagal upload", variant: "destructive" }); }
-                    }} />
-                  </label>
+                  </Button>
                 )}
               </div>
             </CardHeader>
@@ -494,6 +506,66 @@ export default function EmployeeDetail() {
           onOpenChange={setShowCreateUser}
         />
       )}
+
+      {/* Document Upload Dialog */}
+      <Dialog open={showDocUpload} onOpenChange={setShowDocUpload}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Upload Dokumen</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">File Dokumen</label>
+              <Input type="file" accept="application/pdf,image/*" onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setDocFile(file);
+                  if (!docTitle) setDocTitle(file.name);
+                }
+              }} />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Judul Dokumen</label>
+              <Input value={docTitle} onChange={(e) => setDocTitle(e.target.value)} placeholder="Contoh: SK Pengangkatan No. 123" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Kategori</label>
+              <Select value={docCategory} onValueChange={setDocCategory}>
+                <SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="SK Pengangkatan">SK Pengangkatan</SelectItem>
+                  <SelectItem value="SK Kenaikan Pangkat">SK Kenaikan Pangkat</SelectItem>
+                  <SelectItem value="SK Mutasi">SK Mutasi</SelectItem>
+                  <SelectItem value="SK Jabatan">SK Jabatan</SelectItem>
+                  <SelectItem value="Sertifikat">Sertifikat</SelectItem>
+                  <SelectItem value="Ijazah">Ijazah</SelectItem>
+                  <SelectItem value="KTP">KTP</SelectItem>
+                  <SelectItem value="NPWP">NPWP</SelectItem>
+                  <SelectItem value="Surat Peringatan">Surat Peringatan</SelectItem>
+                  <SelectItem value="Lainnya">Lainnya</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button className="w-full" disabled={!docFile || !docTitle} onClick={async () => {
+              if (!docFile || !docTitle) return;
+              const formData = new FormData();
+              formData.append('document', docFile);
+              formData.append('title', docTitle);
+              formData.append('category', docCategory);
+              try {
+                const res = await fetch(`/api/employees/${employee.id}/documents`, { method: 'POST', body: formData, credentials: 'include' });
+                if (res.ok) {
+                  queryClient.invalidateQueries({ queryKey: ["/api/documents/employee", employeeId] });
+                  toast({ title: "Dokumen berhasil diupload" });
+                  setShowDocUpload(false);
+                } else {
+                  toast({ title: "Gagal upload", variant: "destructive" });
+                }
+              } catch { toast({ title: "Gagal upload", variant: "destructive" }); }
+            }}>
+              Upload
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -535,6 +607,7 @@ function EditEmployeeDialog({ employee, departments, branches, subDepartments, o
     maritalStatus: employee.maritalStatus || "",
     contractEndDate: employee.contractEndDate || "",
     annualLeaveQuota: employee.annualLeaveQuota !== undefined ? String(employee.annualLeaveQuota) : "12",
+    spWarning: employee.spWarning || "",
   });
 
   const updateMutation = useMutation({
@@ -768,6 +841,18 @@ function EditEmployeeDialog({ employee, departments, branches, subDepartments, o
                 <SelectContent>
                   <SelectItem value="tetap">Tetap</SelectItem>
                   <SelectItem value="kontrak">Kontrak</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Surat Peringatan (SP)</label>
+              <Select value={form.spWarning || "none"} onValueChange={v => setForm({...form, spWarning: v === "none" ? "" : v})}>
+                <SelectTrigger><SelectValue placeholder="Tidak Ada SP" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Tidak Ada SP</SelectItem>
+                  <SelectItem value="SP-1">SP-1 (Peringatan Pertama)</SelectItem>
+                  <SelectItem value="SP-2">SP-2 (Peringatan Kedua)</SelectItem>
+                  <SelectItem value="SP-3">SP-3 (Peringatan Ketiga)</SelectItem>
                 </SelectContent>
               </Select>
             </div>

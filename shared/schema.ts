@@ -80,6 +80,7 @@ export const employees = pgTable("employees", {
   probationEndDate: date("probation_end_date"),
   contractEndDate: date("contract_end_date"),
   annualLeaveQuota: integer("annual_leave_quota").notNull().default(12),
+  spWarning: text("sp_warning"), // null | 'SP-1' | 'SP-2' | 'SP-3'
   createdAt: timestamp("created_at").defaultNow(),
 });
 
