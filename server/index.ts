@@ -41,7 +41,8 @@ app.use(
     cookie: {
       maxAge: 24 * 60 * 60 * 1000,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      // For PaaS like Railway/Render, we relax the secure flag unless we explicitly enforce HTTPS proxying via 'trust proxy' everywhere correctly
+      secure: false, // process.env.NODE_ENV === "production",
       sameSite: "lax",
     },
     proxy: process.env.NODE_ENV === "production",
