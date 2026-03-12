@@ -221,7 +221,23 @@ export default function LeavePage() {
 }
 
 function LeaveForm({ employees, onSubmit, isPending }: { employees: Employee[]; onSubmit: (d: any) => void; isPending: boolean }) {
-  const [form, setForm] = useState({ employeeId: "", type: "Cuti Tahunan", startDate: "", endDate: "", days: 1, reason: "" });
+  const [form, setForm] = useState({ employeeId: "", type: "Cuti Tahunan", startDate: "", endDate: "", days: 0, reason: "" });
+
+  const calcDays = (start: string, end: string) => {
+    if (!start || !end) return 0;
+    const diff = Math.floor((new Date(end).getTime() - new Date(start).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    return diff > 0 ? diff : 0;
+  };
+
+  const handleStartChange = (val: string) => {
+    const days = calcDays(val, form.endDate);
+    setForm({ ...form, startDate: val, days });
+  };
+
+  const handleEndChange = (val: string) => {
+    const days = calcDays(form.startDate, val);
+    setForm({ ...form, endDate: val, days });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,10 +267,10 @@ function LeaveForm({ employees, onSubmit, isPending }: { employees: Employee[]; 
         </Select>
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div><label className="text-sm font-medium mb-1.5 block">Tanggal Mulai</label><Input type="date" value={form.startDate} onChange={e => setForm({...form, startDate: e.target.value})} required data-testid="input-leave-start" /></div>
-        <div><label className="text-sm font-medium mb-1.5 block">Tanggal Selesai</label><Input type="date" value={form.endDate} onChange={e => setForm({...form, endDate: e.target.value})} required data-testid="input-leave-end" /></div>
+        <div><label className="text-sm font-medium mb-1.5 block">Tanggal Mulai</label><Input type="date" value={form.startDate} onChange={e => handleStartChange(e.target.value)} required data-testid="input-leave-start" /></div>
+        <div><label className="text-sm font-medium mb-1.5 block">Tanggal Selesai</label><Input type="date" value={form.endDate} onChange={e => handleEndChange(e.target.value)} required data-testid="input-leave-end" /></div>
       </div>
-      <div><label className="text-sm font-medium mb-1.5 block">Jumlah Hari</label><Input type="number" value={form.days} onChange={e => setForm({...form, days: parseInt(e.target.value)})} min={1} data-testid="input-leave-days" /></div>
+      <div><label className="text-sm font-medium mb-1.5 block">Jumlah Hari</label><Input type="number" value={form.days} readOnly className="bg-muted/50" data-testid="input-leave-days" /></div>
       <div><label className="text-sm font-medium mb-1.5 block">Alasan</label><Textarea value={form.reason} onChange={e => setForm({...form, reason: e.target.value})} rows={3} data-testid="input-leave-reason" /></div>
       <Button type="submit" className="w-full" disabled={isPending} data-testid="btn-submit-leave">{isPending ? "Menyimpan..." : "Ajukan"}</Button>
     </form>
