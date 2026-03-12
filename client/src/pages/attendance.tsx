@@ -357,7 +357,7 @@ export default function AttendancePage() {
                     const XLSX = await import("xlsx");
                     const dataToExport = recapData.map((row, index) => ({
                       "No": index + 1,
-                      "NIP": row.emp.nip,
+                      "NIK": row.emp.nip,
                       "Nama Pegawai": row.emp.fullName,
                       "Hadir": row.hadir,
                       "Izin": row.izin,

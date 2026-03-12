@@ -416,11 +416,10 @@ export default function SalaryIncreasesPage() {
 }
 
 const GRADE_BASE_SALARY: Record<string, number> = {
-  "I/a": 1560800, "I/b": 1704500, "I/c": 1776000, "I/d": 1851800,
-  "II/a": 2022200, "II/b": 2208400, "II/c": 2301800, "II/d": 2399200,
-  "III/a": 2579400, "III/b": 2688500, "III/c": 2802300, "III/d": 2920800,
-  "IV/a": 3044300, "IV/b": 3173100, "IV/c": 3307300, "IV/d": 3447200,
-  "IV/e": 3593100,
+  "A/I": 1560800, "B/I": 1704500, "C/I": 1776000, "D/I": 1851800,
+  "A/II": 2022200, "B/II": 2208400, "C/II": 2301800, "D/II": 2399200,
+  "A/III": 2579400, "B/III": 2688500, "C/III": 2802300, "D/III": 2920800,
+  "A/IV": 3044300, "B/IV": 3173100, "C/IV": 3307300, "D/IV": 3447200, "E/IV": 3593100,
 };
 
 function SalaryIncreaseForm({ employees, onSubmit, isPending }: {

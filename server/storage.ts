@@ -216,7 +216,26 @@ export const storage = {
     return result;
   },
   async updateLeaveRequest(id: number, data: Partial<InsertLeaveRequest>): Promise<LeaveRequest> {
+    const [old] = await db.select().from(leaveRequests).where(eq(leaveRequests.id, id));
+    
     const [result] = await db.update(leaveRequests).set(data).where(eq(leaveRequests.id, id)).returning();
+    
+    if (old && old.status !== 'approved' && data.status === 'approved') {
+      const [emp] = await db.select().from(employees).where(eq(employees.id, result.employeeId));
+      if (emp) {
+        await db.update(employees)
+          .set({ annualLeaveQuota: Math.max(0, emp.annualLeaveQuota - result.days) })
+          .where(eq(employees.id, result.employeeId));
+      }
+    } else if (old && old.status === 'approved' && data.status !== 'approved') {
+      const [emp] = await db.select().from(employees).where(eq(employees.id, result.employeeId));
+      if (emp) {
+        await db.update(employees)
+          .set({ annualLeaveQuota: emp.annualLeaveQuota + result.days })
+          .where(eq(employees.id, result.employeeId));
+      }
+    }
+    
     return result;
   },
 

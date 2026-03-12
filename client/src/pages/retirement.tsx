@@ -82,7 +82,7 @@ export default function RetirementPage() {
     const data = filtered.map((emp, i) => ({
       "No": i + 1,
       "Nama": emp.fullName,
-      "NIP": emp.nip,
+      "NIK": emp.nip,
       "Tipe": emp.employeeType === "kontrak" ? "Kontrak" : "Tetap",
       "Bagian": getDeptName(emp.departmentId),
       "Keterangan": emp.type === "kontrak" ? "Kontrak Berakhir" : "Pensiun",
@@ -171,7 +171,7 @@ export default function RetirementPage() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Cari nama atau NIP..."
+                placeholder="Cari nama atau NIK..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -208,7 +208,7 @@ export default function RetirementPage() {
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left px-5 py-3 font-medium text-muted-foreground">Nama</th>
-                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">NIP</th>
+                  <th className="text-left px-5 py-3 font-medium text-muted-foreground">NIK</th>
                   <th className="text-left px-5 py-3 font-medium text-muted-foreground hidden md:table-cell">Tipe</th>
                   <th className="text-left px-5 py-3 font-medium text-muted-foreground hidden md:table-cell">Bagian</th>
                   <th className="text-left px-5 py-3 font-medium text-muted-foreground">Keterangan</th>

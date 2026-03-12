@@ -704,7 +704,7 @@ function ExportExcelDialog({
       rows.push([]);
 
       const headers = [
-        "No", "NIP", "Nama", "Bagian", "Jabatan", "Status",
+        "No", "NIK", "Nama", "Bagian", "Jabatan", "Status",
         "Gaji Pokok", "Tunj. Jabatan", "Tunj. Keluarga",
         "Tunj. Transport", "Tunj. Makan", "Lembur", "Insentif",
         "Total Penghasilan",

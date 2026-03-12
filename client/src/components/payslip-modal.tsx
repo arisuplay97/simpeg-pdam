@@ -119,7 +119,7 @@ export default function PayslipModal({ payrollItem, employee, deductions, positi
     doc.setFontSize(7);
     const empInfo = [
       ["Nama", employee?.fullName || "-"],
-      ["NIP", employee?.nip || "-"],
+      ["NIK", employee?.nip || "-"],
       ["Jabatan", pos?.name || "-"],
       ["Bagian", dept?.name || "-"],
       ["Golongan", employee?.grade || "-"],
@@ -292,7 +292,7 @@ export default function PayslipModal({ payrollItem, employee, deductions, positi
                 <table style={{ width: "100%", marginBottom: 12, fontSize: 10 }}>
                   <tbody>
                     <tr><td style={{ width: 80, padding: "2px 0", color: "#555" }}>Nama</td><td style={{ width: 10 }}>:</td><td style={{ fontWeight: 600 }}>{employee?.fullName || "-"}</td></tr>
-                    <tr><td style={{ padding: "2px 0", color: "#555" }}>NIP</td><td>:</td><td style={{ fontWeight: 600 }}>{employee?.nip || "-"}</td></tr>
+                    <tr><td style={{ padding: "2px 0", color: "#555" }}>NIK</td><td>:</td><td style={{ fontWeight: 600 }}>{employee?.nip || "-"}</td></tr>
                     <tr><td style={{ padding: "2px 0", color: "#555" }}>Jabatan</td><td>:</td><td style={{ fontWeight: 600 }}>{pos?.name || "-"}</td></tr>
                     <tr><td style={{ padding: "2px 0", color: "#555" }}>Bagian</td><td>:</td><td style={{ fontWeight: 600 }}>{dept?.name || "-"}</td></tr>
                     <tr><td style={{ padding: "2px 0", color: "#555" }}>Golongan</td><td>:</td><td style={{ fontWeight: 600 }}>{employee?.grade || "-"}</td></tr>

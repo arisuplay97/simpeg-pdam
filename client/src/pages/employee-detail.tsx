@@ -705,7 +705,7 @@ function EditEmployeeDialog({ employee, departments, branches, subDepartments, o
               <Select value={form.grade} onValueChange={v => setForm({...form, grade: v})}>
                 <SelectTrigger data-testid="edit-select-grade"><SelectValue placeholder="Pilih Golongan" /></SelectTrigger>
                 <SelectContent>
-                  {["I/a", "I/b", "I/c", "I/d", "II/a", "II/b", "II/c", "II/d", "III/a", "III/b", "III/c", "III/d", "IV/a", "IV/b", "IV/c", "IV/d", "IV/e"].map(g => (
+                  {["A/I", "B/I", "C/I", "D/I", "A/II", "B/II", "C/II", "D/II", "A/III", "B/III", "C/III", "D/III", "A/IV", "B/IV", "C/IV", "D/IV", "E/IV"].map(g => (
                     <SelectItem key={g} value={g}>Gol. {g}</SelectItem>
                   ))}
                 </SelectContent>

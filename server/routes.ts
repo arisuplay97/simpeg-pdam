@@ -866,7 +866,7 @@ export async function registerRoutes(
       for (let i = 0; i < dataLines.length; i++) {
         let cols = dataLines[i];
         if (cols.length < 4) {
-          errors.push(`Baris ${i + 2}: Format tidak valid (butuh NIP,Tanggal,JamMasuk,JamKeluar)`);
+          errors.push(`Baris ${i + 2}: Format tidak valid (butuh NIK,Tanggal,JamMasuk,JamKeluar)`);
           continue;
         }
 
@@ -907,7 +907,7 @@ export async function registerRoutes(
         
         const emp = employees.find(e => e.nip === nip);
         if (!emp) {
-          errors.push(`Baris ${i + 2}: NIP ${nip} tidak ditemukan`);
+          errors.push(`Baris ${i + 2}: NIK ${nip} tidak ditemukan`);
           continue;
         }
 

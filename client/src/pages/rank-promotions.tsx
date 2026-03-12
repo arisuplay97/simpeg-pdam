@@ -34,10 +34,10 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
 };
 
 const GRADE_OPTIONS = [
-  "I/a", "I/b", "I/c", "I/d",
-  "II/a", "II/b", "II/c", "II/d",
-  "III/a", "III/b", "III/c", "III/d",
-  "IV/a", "IV/b", "IV/c", "IV/d",
+  "A/I", "B/I", "C/I", "D/I",
+  "A/II", "B/II", "C/II", "D/II",
+  "A/III", "B/III", "C/III", "D/III",
+  "A/IV", "B/IV", "C/IV", "D/IV", "E/IV"
 ];
 
 const STATUS_FLOW = [
@@ -274,7 +274,7 @@ export default function RankPromotionsPage() {
                   <thead>
                     <tr className="border-b bg-muted/30">
                       <th className="text-left p-3 font-medium">Pegawai</th>
-                      <th className="text-left p-3 font-medium">NIP</th>
+                      <th className="text-left p-3 font-medium">NIK</th>
                       <th className="text-left p-3 font-medium">Pangkat Lama → Baru</th>
                       <th className="text-left p-3 font-medium">Tgl Pengajuan</th>
                       <th className="text-left p-3 font-medium">Status</th>
