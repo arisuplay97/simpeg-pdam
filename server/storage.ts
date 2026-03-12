@@ -408,7 +408,6 @@ export const storage = {
   async getEligibleForPromotion(): Promise<Employee[]> {
     const cutoffDate = new Date();
     cutoffDate.setFullYear(cutoffDate.getFullYear() - 4);
-    cutoffDate.setMonth(cutoffDate.getMonth() + 3);
     const cutoff = cutoffDate.toISOString().split('T')[0];
 
     return db.select().from(employees)
@@ -430,7 +429,6 @@ export const storage = {
   async getEligibleForSalaryIncrease(): Promise<Employee[]> {
     const cutoffDate = new Date();
     cutoffDate.setFullYear(cutoffDate.getFullYear() - 2);
-    cutoffDate.setMonth(cutoffDate.getMonth() + 3);
     const cutoff = cutoffDate.toISOString().split('T')[0];
 
     return db.select().from(employees)

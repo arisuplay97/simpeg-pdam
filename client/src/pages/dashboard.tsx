@@ -401,7 +401,7 @@ export default function Dashboard() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{emp.fullName}</p>
-                      <p className="text-xs text-muted-foreground">Status Pangkat Terakhir: {emp.lastPromotionDate ? new Date(emp.lastPromotionDate).toLocaleDateString('id-ID') : 'Belum pernah (' + new Date(emp.joinDate).toLocaleDateString('id-ID') + ')'}</p>
+                      <p className="text-xs text-muted-foreground">Status Pangkat Terakhir: {emp.lastPromotionDate ? new Date(emp.lastPromotionDate).toLocaleDateString('id-ID') : 'Dari Awal Masuk (' + (emp.joinDate ? new Date(emp.joinDate).toLocaleDateString('id-ID') : '-') + ')'}</p>
                     </div>
                   </div>
                   <Badge variant="outline" className="text-[10px] border-indigo-500/50 text-indigo-600 dark:text-indigo-400">
@@ -417,7 +417,7 @@ export default function Dashboard() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{emp.fullName}</p>
-                      <p className="text-xs text-muted-foreground">Kenaikan Gaji Terakhir: {emp.lastSalaryIncreaseDate ? new Date(emp.lastSalaryIncreaseDate).toLocaleDateString('id-ID') : 'Belum pernah (' + new Date(emp.joinDate).toLocaleDateString('id-ID') + ')'}</p>
+                      <p className="text-xs text-muted-foreground">Kenaikan Gaji Terakhir: {emp.lastSalaryIncreaseDate ? new Date(emp.lastSalaryIncreaseDate).toLocaleDateString('id-ID') : 'Dari Awal Masuk (' + (emp.joinDate ? new Date(emp.joinDate).toLocaleDateString('id-ID') : '-') + ')'}</p>
                     </div>
                   </div>
                   <Badge variant="outline" className="text-[10px] border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
