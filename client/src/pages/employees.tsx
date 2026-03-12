@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
-import type { Employee, Department } from "@shared/schema";
+import type { Employee, Department, Branch, SubDepartment } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,9 +40,9 @@ export default function Employees() {
     queryKey: ["/api/employees"],
   });
 
-  const { data: departments = [] } = useQuery<Department[]>({
-    queryKey: ["/api/departments"],
-  });
+  const { data: departments = [] } = useQuery<Department[]>({ queryKey: ["/api/departments"] });
+  const { data: branches = [] } = useQuery<Branch[]>({ queryKey: ["/api/branches"] });
+  const { data: subDepartments = [] } = useQuery<SubDepartment[]>({ queryKey: ["/api/sub-departments"] });
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -56,18 +56,27 @@ export default function Employees() {
     },
   });
 
+  const [officeFilter, setOfficeFilter] = useState("all");
+  const [branchFilter, setBranchFilter] = useState("all");
+
   const filtered = employees.filter((emp) => {
     const matchSearch = emp.fullName.toLowerCase().includes(search.toLowerCase()) ||
       emp.nip.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || emp.status === statusFilter;
     const matchType = typeFilter === "all" || emp.employeeType === typeFilter;
-    return matchSearch && matchStatus && matchType;
+    const matchOffice = officeFilter === "all" || emp.officeType === officeFilter;
+    const matchBranch = branchFilter === "all" || String(emp.branchId) === branchFilter;
+    return matchSearch && matchStatus && matchType && matchOffice && matchBranch;
   });
 
-  const getDeptName = (deptId: number | null) => {
-    if (!deptId) return "—";
-    const dept = departments.find(d => d.id === deptId);
-    return dept?.name || "—";
+  const getLocationName = (emp: Employee) => {
+    if (emp.officeType === "pusat") {
+      const dept = departments.find(d => d.id === emp.departmentId);
+      return `Pusat ${dept ? `- ${dept.name}` : ""}`;
+    } else {
+      const branch = branches.find(b => b.id === emp.branchId);
+      return `Cabang ${branch ? `- ${branch.name}` : ""}`;
+    }
   };
 
   const activeCount = employees.filter(e => e.status === "aktif").length;
@@ -104,6 +113,8 @@ export default function Employees() {
             </DialogHeader>
             <AddEmployeeForm
               departments={departments}
+              branches={branches}
+              subDepartments={subDepartments}
               onSubmit={(data) => createMutation.mutate(data)}
               isPending={createMutation.isPending}
             />
@@ -157,16 +168,29 @@ export default function Employees() {
                   <SelectItem value="pensiun">Pensiun</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-[140px]" data-testid="select-type-filter">
-                  <SelectValue placeholder="Tipe" />
+              <Select value={officeFilter} onValueChange={setOfficeFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Lokasi" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua Tipe</SelectItem>
-                  <SelectItem value="tetap">Tetap</SelectItem>
-                  <SelectItem value="kontrak">Kontrak</SelectItem>
+                  <SelectItem value="all">Semua Lokasi</SelectItem>
+                  <SelectItem value="pusat">Pusat</SelectItem>
+                  <SelectItem value="cabang">Cabang</SelectItem>
                 </SelectContent>
               </Select>
+              {officeFilter === "cabang" && (
+                <Select value={branchFilter} onValueChange={setBranchFilter}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Pilih Cabang" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Cabang</SelectItem>
+                    {branches.map(b => (
+                      <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -185,7 +209,9 @@ export default function Employees() {
                         {emp.employeeType}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{emp.nip} · {getDeptName(emp.departmentId)}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5" title={emp.structuralPosition?.replace('_', ' ').toUpperCase()}>
+                      {emp.nip} · {getLocationName(emp)} · {emp.structuralPosition?.replace('_', ' ').toUpperCase()}
+                    </p>
                   </div>
                   <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
                     {emp.email && <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{emp.email}</span>}
@@ -227,21 +253,36 @@ export default function Employees() {
   );
 }
 
-function AddEmployeeForm({ departments, onSubmit, isPending }: { departments: Department[]; onSubmit: (data: any) => void; isPending: boolean }) {
+function AddEmployeeForm({ 
+  departments, branches, subDepartments, onSubmit, isPending 
+}: { 
+  departments: Department[]; branches: Branch[]; subDepartments: SubDepartment[];
+  onSubmit: (data: any) => void; isPending: boolean 
+}) {
   const [form, setForm] = useState({
     nip: "", fullName: "", gender: "Laki-laki", birthPlace: "", birthDate: "",
-    address: "", phone: "", email: "", religion: "Islam", education: "",
-    departmentId: "", positionId: "", status: "aktif", employeeType: "tetap",
+    address: "", phone: "", email: "", religion: "Islam", education: "", major: "",
+    officeType: "pusat", branchId: "", departmentId: "", subDepartmentId: "", structuralPosition: "staff",
+    positionId: "", status: "aktif", employeeType: "tetap",
     grade: "", joinDate: "", npwp: "", bpjs: "", bankAccount: "", bankName: "",
     maritalStatus: "Lajang", contractEndDate: "",
   });
+
+  const isPusat = form.officeType === "pusat";
+  const disableSubDept = (isPusat && ["direktur", "kabid"].includes(form.structuralPosition)) || (!isPusat && form.structuralPosition === "kepala_cabang");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit({
       ...form,
-      departmentId: form.departmentId ? parseInt(form.departmentId) : null,
+      departmentId: isPusat && form.departmentId ? parseInt(form.departmentId) : null,
+      branchId: !isPusat && form.branchId ? parseInt(form.branchId) : null,
+      subDepartmentId: !disableSubDept && form.subDepartmentId ? parseInt(form.subDepartmentId) : null,
       positionId: form.positionId ? parseInt(form.positionId) : null,
+      contractEndDate: form.contractEndDate || null,
+      birthDate: form.birthDate || null,
+      joinDate: form.joinDate || null,
+      major: form.major || null,
     });
   };
 
@@ -249,6 +290,82 @@ function AddEmployeeForm({ departments, onSubmit, isPending }: { departments: De
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="bg-muted p-4 rounded-xl border mb-4 space-y-4">
+        <h3 className="font-semibold text-sm">Lokasi & Jabatan Struktural</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Tipe Kantor</label>
+            <Select value={form.officeType} onValueChange={v => setForm({...form, officeType: v, structuralPosition: v === "pusat" ? "staff" : "staff", departmentId: "", branchId: "", subDepartmentId: ""})}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pusat">Kantor Pusat</SelectItem>
+                <SelectItem value="cabang">Kantor Cabang</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Jabatan Struktural</label>
+            <Select value={form.structuralPosition} onValueChange={v => setForm({...form, structuralPosition: v, subDepartmentId: ""})}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {isPusat ? (
+                  <>
+                    <SelectItem value="direktur">Direktur</SelectItem>
+                    <SelectItem value="kabid">Kepala Bidang (Kabid)</SelectItem>
+                    <SelectItem value="kasubbid">Kepala Sub-Bidang (Kasubbid)</SelectItem>
+                    <SelectItem value="staff">Staff Pusat</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="kepala_cabang">Kepala Cabang</SelectItem>
+                    <SelectItem value="kasubbid">Kepala Bagian (Kasubbid)</SelectItem>
+                    <SelectItem value="staff">Staff Cabang</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isPusat ? (
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Bidang {form.structuralPosition !== 'direktur' && <span className="text-red-500">*</span>}</label>
+              <Select value={form.departmentId} onValueChange={v => setForm({...form, departmentId: v})} disabled={form.structuralPosition === 'direktur'} required={form.structuralPosition !== 'direktur'}>
+                <SelectTrigger><SelectValue placeholder="Pilih Bidang" /></SelectTrigger>
+                <SelectContent>
+                  {departments.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Cabang <span className="text-red-500">*</span></label>
+              <Select value={form.branchId} onValueChange={v => setForm({...form, branchId: v})} required>
+                <SelectTrigger><SelectValue placeholder="Pilih Cabang" /></SelectTrigger>
+                <SelectContent>
+                  {branches.map(b => <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div>
+            <label className={`text-sm font-medium mb-1.5 block ${disableSubDept ? 'text-muted-foreground' : ''}`}>
+              Sub-Bidang / Bagian {!disableSubDept && <span className="text-red-500">*</span>}
+            </label>
+            <Select value={form.subDepartmentId} onValueChange={v => setForm({...form, subDepartmentId: v})} disabled={disableSubDept} required={!disableSubDept}>
+              <SelectTrigger><SelectValue placeholder={disableSubDept ? "Tidak Perlu Sub-Bidang" : "Pilih Sub-Bidang"} /></SelectTrigger>
+              <SelectContent>
+                {subDepartments.filter(sd => isPusat ? sd.departmentId === parseInt(form.departmentId||'0') : sd.branchId === parseInt(form.branchId||'0'))
+                  .map(sd => <SelectItem key={sd.id} value={String(sd.id)}>{sd.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {!disableSubDept && (
+              <p className="text-[10px] text-muted-foreground mt-1">Note: Pilih Bidang/Cabang terlebih dahulu.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="text-sm font-medium mb-1.5 block">NIP</label>
@@ -268,15 +385,7 @@ function AddEmployeeForm({ departments, onSubmit, isPending }: { departments: De
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <label className="text-sm font-medium mb-1.5 block">Bagian</label>
-          <Select value={form.departmentId} onValueChange={v => setForm({...form, departmentId: v})}>
-            <SelectTrigger data-testid="select-department"><SelectValue placeholder="Pilih Bagian" /></SelectTrigger>
-            <SelectContent>
-              {departments.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
+
         <div>
           <label className="text-sm font-medium mb-1.5 block">Email</label>
           <Input type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} className={inputClass} data-testid="input-email" />
@@ -284,6 +393,17 @@ function AddEmployeeForm({ departments, onSubmit, isPending }: { departments: De
         <div>
           <label className="text-sm font-medium mb-1.5 block">No. HP</label>
           <Input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} className={inputClass} data-testid="input-phone" />
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1.5 block">Golongan</label>
+          <Select value={form.grade} onValueChange={v => setForm({...form, grade: v})}>
+            <SelectTrigger data-testid="select-grade"><SelectValue placeholder="Pilih Golongan" /></SelectTrigger>
+            <SelectContent>
+              {["I/a", "I/b", "I/c", "I/d", "II/a", "II/b", "II/c", "II/d", "III/a", "III/b", "III/c", "III/d", "IV/a", "IV/b", "IV/c", "IV/d", "IV/e"].map(g => (
+                <SelectItem key={g} value={g}>Gol. {g}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <label className="text-sm font-medium mb-1.5 block">Status</label>
@@ -317,8 +437,19 @@ function AddEmployeeForm({ departments, onSubmit, isPending }: { departments: De
           </div>
         )}
         <div>
-          <label className="text-sm font-medium mb-1.5 block">Pendidikan</label>
-          <Input value={form.education} onChange={e => setForm({...form, education: e.target.value})} className={inputClass} data-testid="input-education" />
+          <label className="text-sm font-medium mb-1.5 block">Pendidikan Dasar/Terakhir</label>
+          <Select value={form.education} onValueChange={v => setForm({...form, education: v})}>
+            <SelectTrigger data-testid="select-education"><SelectValue placeholder="Pilih Pendidikan" /></SelectTrigger>
+            <SelectContent>
+              {["SD", "SMP", "SMA/SMK", "D1", "D2", "D3", "D4", "S1", "S2", "S3"].map(level => (
+                <SelectItem key={level} value={level}>{level}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-sm font-medium mb-1.5 block">Jurusan (Opsional)</label>
+          <Input value={form.major} onChange={e => setForm({...form, major: e.target.value})} placeholder="Contoh: Teknik Mesin" className={inputClass} data-testid="input-major" />
         </div>
       </div>
       <Button type="submit" className="w-full" disabled={isPending} data-testid="btn-submit-employee">

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Plus, Clock, CheckCircle2, XCircle, Calendar, ArrowRight } from "lucide-react";
+import { FileText, Plus, Clock, CheckCircle2, XCircle, Calendar, ArrowRight, BatteryMedium } from "lucide-react";
 
 export default function LeavePage() {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -158,6 +158,60 @@ export default function LeavePage() {
                 <p className="text-sm font-medium">Tidak ada pengajuan</p>
               </div>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <BatteryMedium className="w-5 h-5 text-emerald-600" />
+            Sisa Kuota Cuti Tahunan Pegawai ({new Date().getFullYear()})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full text-sm">
+              <thead className="bg-muted pb-safe">
+                <tr>
+                  <th className="text-left font-medium text-muted-foreground px-4 py-3 border-b">Pegawai</th>
+                  <th className="text-center font-medium text-muted-foreground px-4 py-3 border-b">Total Kuota</th>
+                  <th className="text-center font-medium text-muted-foreground px-4 py-3 border-b">Telah Diambil</th>
+                  <th className="text-center font-medium text-muted-foreground px-4 py-3 border-b">Sisa Cuti</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {employees.map((emp) => {
+                  const thisYear = new Date().getFullYear();
+                  const usedDays = leaveRequests
+                    .filter(l => l.employeeId === emp.id && l.type === "Cuti Tahunan" && l.status === "approved" && l.startDate && new Date(l.startDate).getFullYear() === thisYear)
+                    .reduce((s, l) => s + l.days, 0);
+                  const quota = emp.annualLeaveQuota ?? 12;
+                  const remaining = quota - usedDays;
+                  
+                  return (
+                    <tr key={emp.id} className="hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3">
+                        <p className="font-medium">{emp.fullName}</p>
+                        <p className="text-xs text-muted-foreground">{emp.nip}</p>
+                      </td>
+                      <td className="px-4 py-3 text-center">{quota} Hari</td>
+                      <td className="px-4 py-3 text-center">{usedDays > 0 ? `${usedDays} Hari` : '-'}</td>
+                      <td className="px-4 py-3 text-center">
+                        <span className={`px-2 py-1 rounded-md font-semibold ${remaining <= 2 ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {remaining} Hari
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {employees.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Tidak ada data pegawai</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>

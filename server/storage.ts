@@ -3,16 +3,16 @@ import { db } from "./db";
 import {
   departments, positions, employees, attendance, leaveRequests,
   payroll, payrollDeductions, financeTransactions, performanceReviews, mutations,
-  trainings, documents, notifications, users,
+  trainings, documents, notifications, users, branches, subDepartments,
   rankPromotions, salaryIncreases, payslipLogs, approvalLogs, exportLogs,
   type InsertDepartment, type InsertPosition, type InsertEmployee,
   type InsertAttendance, type InsertLeaveRequest, type InsertPayroll,
   type InsertPayrollDeduction, type InsertPayslipLog, type InsertExportLog,
   type InsertFinanceTransaction, type InsertPerformanceReview,
   type InsertMutation, type InsertTraining, type InsertDocument,
-  type InsertNotification, type InsertUser,
+  type InsertNotification, type InsertUser, type InsertBranch, type InsertSubDepartment,
   type InsertRankPromotion, type InsertSalaryIncrease, type InsertApprovalLog,
-  type Department, type Position, type Employee, type Attendance,
+  type Department, type Position, type Employee, type Attendance, type Branch, type SubDepartment,
   type LeaveRequest, type Payroll, type PayrollDeduction, type FinanceTransaction,
   type PerformanceReview, type Mutation, type Training, type Document,
   type Notification, type User,
@@ -50,6 +50,43 @@ export const storage = {
     const [result] = await db.insert(departments).values(data).returning();
     return result;
   },
+  async updateDepartment(id: number, data: Partial<InsertDepartment>): Promise<Department> {
+    const [result] = await db.update(departments).set(data).where(eq(departments.id, id)).returning();
+    return result;
+  },
+  async deleteDepartment(id: number): Promise<void> {
+    await db.delete(departments).where(eq(departments.id, id));
+  },
+
+  async getBranches(): Promise<Branch[]> {
+    return db.select().from(branches).orderBy(branches.name);
+  },
+  async createBranch(data: InsertBranch): Promise<Branch> {
+    const [result] = await db.insert(branches).values(data).returning();
+    return result;
+  },
+  async updateBranch(id: number, data: Partial<InsertBranch>): Promise<Branch> {
+    const [result] = await db.update(branches).set(data).where(eq(branches.id, id)).returning();
+    return result;
+  },
+  async deleteBranch(id: number): Promise<void> {
+    await db.delete(branches).where(eq(branches.id, id));
+  },
+
+  async getSubDepartments(): Promise<SubDepartment[]> {
+    return db.select().from(subDepartments).orderBy(subDepartments.name);
+  },
+  async createSubDepartment(data: InsertSubDepartment): Promise<SubDepartment> {
+    const [result] = await db.insert(subDepartments).values(data).returning();
+    return result;
+  },
+  async updateSubDepartment(id: number, data: Partial<InsertSubDepartment>): Promise<SubDepartment> {
+    const [result] = await db.update(subDepartments).set(data).where(eq(subDepartments.id, id)).returning();
+    return result;
+  },
+  async deleteSubDepartment(id: number): Promise<void> {
+    await db.delete(subDepartments).where(eq(subDepartments.id, id));
+  },
 
   async getPositions(): Promise<Position[]> {
     return db.select().from(positions).orderBy(positions.name);
@@ -71,6 +108,59 @@ export const storage = {
     return result;
   },
   async updateEmployee(id: number, data: Partial<InsertEmployee>): Promise<Employee> {
+    const existing = await this.getEmployee(id);
+    if (!existing) throw new Error("Employee not found");
+
+    const isMutated =
+      (data.departmentId !== undefined && data.departmentId !== existing.departmentId) ||
+      (data.positionId !== undefined && data.positionId !== existing.positionId) ||
+      (data.branchId !== undefined && data.branchId !== existing.branchId) ||
+      (data.subDepartmentId !== undefined && data.subDepartmentId !== existing.subDepartmentId) ||
+      (data.structuralPosition !== undefined && data.structuralPosition !== existing.structuralPosition) ||
+      (data.officeType !== undefined && data.officeType !== existing.officeType);
+
+    if (isMutated) {
+      let fromDeptName = undefined;
+      let toDeptName = undefined;
+      const fromPosName = existing.structuralPosition || "Staff";
+      const toPosName = data.structuralPosition || existing.structuralPosition || "Staff";
+
+      if (existing.officeType === "pusat" && existing.departmentId) {
+        const [d] = await db.select().from(departments).where(eq(departments.id, existing.departmentId));
+        if (d) fromDeptName = d.name;
+      } else if (existing.officeType === "cabang" && existing.branchId) {
+         const [b] = await db.select().from(branches).where(eq(branches.id, existing.branchId));
+         if (b) fromDeptName = `Cabang ${b.name}`;
+      }
+
+      const newOfficeType = data.officeType || existing.officeType;
+      if (newOfficeType === "pusat") {
+        const toDId = data.departmentId !== undefined ? data.departmentId : existing.departmentId;
+        if (toDId) {
+          const [d] = await db.select().from(departments).where(eq(departments.id, toDId));
+          if (d) toDeptName = d.name;
+        }
+      } else if (newOfficeType === "cabang") {
+         const toBId = data.branchId !== undefined ? data.branchId : existing.branchId;
+         if (toBId) {
+           const [b] = await db.select().from(branches).where(eq(branches.id, toBId));
+           if (b) toDeptName = `Cabang ${b.name}`;
+         }
+      }
+
+      await db.insert(mutations).values({
+        employeeId: id,
+        type: "mutasi",
+        fromPosition: fromPosName,
+        toPosition: toPosName,
+        fromDepartment: fromDeptName || "Tidak Diketahui",
+        toDepartment: toDeptName || "Tidak Diketahui",
+        effectiveDate: new Date().toISOString().split('T')[0],
+        reason: "Perubahan data otomatis (Sistem)",
+        status: "approved",
+      });
+    }
+
     const [result] = await db.update(employees).set(data).where(eq(employees.id, id)).returning();
     return result;
   },
@@ -227,6 +317,9 @@ export const storage = {
   async createDocument(data: InsertDocument): Promise<Document> {
     const [result] = await db.insert(documents).values(data).returning();
     return result;
+  },
+  async deleteDocument(id: number): Promise<void> {
+    await db.delete(documents).where(eq(documents.id, id));
   },
 
   async getNotifications(): Promise<Notification[]> {

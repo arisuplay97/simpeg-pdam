@@ -43,6 +43,13 @@ export default function Dashboard() {
     queryKey: ["/api/dashboard/stats"],
   });
 
+  const isAdminOrDir = user?.role === "admin" || user?.role === "direktur" || user?.role === "superadmin";
+
+  const { data: alerts } = useQuery<{ promote: Employee[], salary: Employee[] }>({
+    queryKey: ["/api/dashboard/alerts"],
+    enabled: !!isAdminOrDir,
+  });
+
   const { data: employees = [] } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
   });
@@ -374,7 +381,61 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {(user?.role === "direktur" || user?.role === "admin" || user?.role === "superadmin") && (awaitingDirApproval.length > 0 || pendingSalaryIncreases.length > 0) && (
+      {isAdminOrDir && alerts && (alerts.promote.length > 0 || alerts.salary.length > 0) && (
+        <Card data-testid="card-hr-alerts">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Shield className="w-4 h-4 text-indigo-500" />
+              Kepegawaian Alerts
+              <Badge className="bg-indigo-500 text-white text-[10px] ml-1">{alerts.promote.length + alerts.salary.length}</Badge>
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">Daftar pegawai yang memenuhi syarat kenaikan pangkat/golongan atau kenaikan gaji berkala</p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 mb-3">
+              {alerts.promote.slice(0, 5).map((emp: Employee) => (
+                <div key={`prom-${emp.id}`} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+                      <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{emp.fullName}</p>
+                      <p className="text-xs text-muted-foreground">Status Pangkat Terakhir: {emp.lastPromotionDate ? new Date(emp.lastPromotionDate).toLocaleDateString('id-ID') : 'Belum pernah (' + new Date(emp.joinDate).toLocaleDateString('id-ID') + ')'}</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] border-indigo-500/50 text-indigo-600 dark:text-indigo-400">
+                    Syarat Pangkat
+                  </Badge>
+                </div>
+              ))}
+              {alerts.salary.slice(0, 5).map((emp: Employee) => (
+                <div key={`sal-${emp.id}`} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                      <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{emp.fullName}</p>
+                      <p className="text-xs text-muted-foreground">Kenaikan Gaji Terakhir: {emp.lastSalaryIncreaseDate ? new Date(emp.lastSalaryIncreaseDate).toLocaleDateString('id-ID') : 'Belum pernah (' + new Date(emp.joinDate).toLocaleDateString('id-ID') + ')'}</p>
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
+                    Syarat KG Berkala
+                  </Badge>
+                </div>
+              ))}
+            </div>
+            <Link href="/employees">
+              <button className="flex items-center gap-1 text-xs text-primary hover:underline">
+                Kelola data pegawai <ArrowRight className="w-3 h-3" />
+              </button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
+
+      {isAdminOrDir && (awaitingDirApproval.length > 0 || pendingSalaryIncreases.length > 0) && (
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base font-semibold flex items-center gap-2">

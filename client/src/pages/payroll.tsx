@@ -1,13 +1,13 @@
 import { useState, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import type { Payroll, Employee, PayrollDeduction, Position, Department } from "@shared/schema";
+import type { Payroll, Employee, PayrollDeduction, Position, Department, Branch } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, TrendingUp, TrendingDown, Wallet, Search, ChevronDown, ChevronRight, Plus, Trash2, X, FileText, Download, Pencil } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Wallet, Search, ChevronDown, ChevronRight, Plus, Trash2, X, FileText, Download, Pencil, CalendarDays, Users } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -624,6 +624,7 @@ function ExportExcelDialog({
   employees,
   positions,
   departments,
+  branches,
 }: {
   open: boolean;
   onClose: () => void;
@@ -631,9 +632,12 @@ function ExportExcelDialog({
   employees: Employee[];
   positions: Position[];
   departments: Department[];
+  branches: Branch[];
 }) {
   const [expMonth, setExpMonth] = useState(String(new Date().getMonth() + 1));
   const [expYear, setExpYear] = useState(String(new Date().getFullYear()));
+  const [expOffice, setExpOffice] = useState("all");
+  const [expBranch, setExpBranch] = useState("all");
   const [expDept, setExpDept] = useState("all");
   const [expStatus, setExpStatus] = useState("all");
   const [exporting, setExporting] = useState(false);
@@ -649,7 +653,21 @@ function ExportExcelDialog({
 
       let filtered = payrollData.filter(p => p.period?.startsWith(periodFilter));
 
-      if (expDept !== "all") {
+      if (expOffice !== "all") {
+        filtered = filtered.filter(p => {
+          const emp = employees.find(e => e.id === p.employeeId);
+          return emp?.officeType === expOffice;
+        });
+      }
+
+      if (expOffice === "cabang" && expBranch !== "all") {
+        filtered = filtered.filter(p => {
+          const emp = employees.find(e => e.id === p.employeeId);
+          return emp?.branchId === parseInt(expBranch);
+        });
+      }
+
+      if (expOffice === "pusat" && expDept !== "all") {
         filtered = filtered.filter(p => {
           const emp = employees.find(e => e.id === p.employeeId);
           return emp?.departmentId === parseInt(expDept);
@@ -796,7 +814,7 @@ function ExportExcelDialog({
     } finally {
       setExporting(false);
     }
-  }, [expMonth, expYear, expDept, expStatus, payrollData, employees, positions, departments, onClose, toast]);
+  }, [expMonth, expYear, expOffice, expBranch, expDept, expStatus, payrollData, employees, positions, departments, branches, onClose, toast]);
 
   if (!open) return null;
 
@@ -844,17 +862,52 @@ function ExportExcelDialog({
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Bagian / Divisi</label>
-            <Select value={expDept} onValueChange={setExpDept}>
-              <SelectTrigger data-testid="select-export-dept"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Bagian</SelectItem>
-                {departments.map(d => (
-                  <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Lokasi Kantor</label>
+              <Select value={expOffice} onValueChange={v => { setExpOffice(v); setExpBranch("all"); setExpDept("all"); }}>
+                <SelectTrigger data-testid="select-export-office"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Lokasi</SelectItem>
+                  <SelectItem value="pusat">Kantor Pusat</SelectItem>
+                  <SelectItem value="cabang">Kantor Cabang</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {expOffice === "cabang" && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Cabang</label>
+                <Select value={expBranch} onValueChange={setExpBranch}>
+                  <SelectTrigger data-testid="select-export-branch"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Cabang</SelectItem>
+                    {branches.map(b => (
+                      <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {expOffice === "pusat" && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Bagian Pusat</label>
+                <Select value={expDept} onValueChange={setExpDept}>
+                  <SelectTrigger data-testid="select-export-dept"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Bagian</SelectItem>
+                    {departments.map(d => (
+                      <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {expOffice === "all" && (
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Bagian / Cabang</label>
+                <Input value="Pilih Lokasi Dahulu" disabled className="text-xs text-muted-foreground h-10" />
+              </div>
+            )}
           </div>
 
           <div>
@@ -893,13 +946,23 @@ function ExportExcelDialog({
   );
 }
 
+const BULAN_LABELS = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
+
 export default function PayrollPage() {
+  const now = new Date();
   const [search, setSearch] = useState("");
+  const [filterMonth, setFilterMonth] = useState(String(now.getMonth() + 1));
+  const [filterYear, setFilterYear] = useState(String(now.getFullYear()));
+  const [filterOffice, setFilterOffice] = useState("all");
+  const [filterBranch, setFilterBranch] = useState("all");
   const [showExport, setShowExport] = useState(false);
   const [showAddPayroll, setShowAddPayroll] = useState(false);
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "direktur" || user?.role === "superadmin";
   const canExport = isAdmin;
+
+  const filterYears: string[] = [];
+  for (let y = now.getFullYear() - 2; y <= now.getFullYear() + 1; y++) filterYears.push(String(y));
 
   const { data: payrollData = [], isLoading } = useQuery<Payroll[]>({
     queryKey: ["/api/payroll"],
@@ -913,12 +976,35 @@ export default function PayrollPage() {
   const { data: departments = [] } = useQuery<Department[]>({
     queryKey: ["/api/departments"],
   });
+  const { data: branches = [] } = useQuery<Branch[]>({
+    queryKey: ["/api/branches"],
+  });
 
-  const totalGross = payrollData.reduce((s, p) => s + Number(p.totalEarnings), 0);
-  const totalDeductions = payrollData.reduce((s, p) => s + Number(p.totalDeductions), 0);
-  const totalNet = payrollData.reduce((s, p) => s + Number(p.netSalary), 0);
+  const periodKey = `${filterYear}-${filterMonth.padStart(2, '0')}`;
+  let periodFiltered = payrollData.filter(p => p.period === periodKey);
 
-  const filtered = payrollData.filter(p => {
+  if (filterOffice !== "all") {
+    periodFiltered = periodFiltered.filter(p => {
+      const emp = employees.find(e => e.id === p.employeeId);
+      return emp?.officeType === filterOffice;
+    });
+  }
+
+  if (filterOffice === "cabang" && filterBranch !== "all") {
+    periodFiltered = periodFiltered.filter(p => {
+      const emp = employees.find(e => e.id === p.employeeId);
+      return emp?.branchId === parseInt(filterBranch);
+    });
+  }
+
+  const totalGross = periodFiltered.reduce((s, p) => s + Number(p.totalEarnings), 0);
+  const totalDeductions = periodFiltered.reduce((s, p) => s + Number(p.totalDeductions), 0);
+  const totalNet = periodFiltered.reduce((s, p) => s + Number(p.netSalary), 0);
+
+  const paidCount = periodFiltered.length;
+  const avgNet = paidCount > 0 ? totalNet / paidCount : 0;
+
+  const filtered = periodFiltered.filter(p => {
     const emp = employees.find(e => e.id === p.employeeId);
     return !search || emp?.fullName.toLowerCase().includes(search.toLowerCase()) || emp?.nip.toLowerCase().includes(search.toLowerCase());
   });
@@ -972,6 +1058,74 @@ export default function PayrollPage() {
           )}
         </div>
       </div>
+
+      {/* Period Filter */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <CalendarDays className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium">Periode:</span>
+            </div>
+            <Select value={filterMonth} onValueChange={setFilterMonth}>
+              <SelectTrigger className="w-[140px]" data-testid="select-payroll-month">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {BULAN_LABELS.map((b, i) => (
+                  <SelectItem key={i} value={String(i + 1)}>{b}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={filterYear} onValueChange={setFilterYear}>
+              <SelectTrigger className="w-[100px]" data-testid="select-payroll-year">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {filterYears.map(y => (
+                  <SelectItem key={y} value={y}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="h-6 w-px bg-border max-sm:hidden mx-1"></div>
+
+            <Select value={filterOffice} onValueChange={v => { setFilterOffice(v); setFilterBranch("all"); }}>
+              <SelectTrigger className="w-[140px]" data-testid="select-filter-office">
+                <SelectValue placeholder="Lokasi" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Lokasi</SelectItem>
+                <SelectItem value="pusat">Kantor Pusat</SelectItem>
+                <SelectItem value="cabang">Kantor Cabang</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {filterOffice === "cabang" && (
+              <Select value={filterBranch} onValueChange={setFilterBranch}>
+                <SelectTrigger className="w-[160px]" data-testid="select-filter-branch">
+                  <SelectValue placeholder="Semua Cabang" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Cabang</SelectItem>
+                  {branches.map(b => (
+                    <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Badge className="bg-primary/10 text-primary border-primary/20 text-sm px-3 py-1.5" data-testid="badge-active-period">
+              📅 Periode Aktif: {BULAN_LABELS[parseInt(filterMonth) - 1]} {filterYear}
+            </Badge>
+            <div className="ml-auto flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {paidCount} pegawai digaji</span>
+              <span>·</span>
+              <span>Rata-rata: {formatRp(String(Math.round(avgNet)))}</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card><CardContent className="p-5">
@@ -1056,6 +1210,7 @@ export default function PayrollPage() {
           employees={employees}
           positions={positions}
           departments={departments}
+          branches={branches}
         />
       )}
 

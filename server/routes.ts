@@ -2,7 +2,63 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { hashPassword, comparePassword, requireAuth, requireAdmin, requireDirektur, requireSuperAdmin } from "./auth";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 
+// Configure multer for file uploads
+const uploadsDir = path.join(process.cwd(), "public", "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const photoStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const dir = path.join(uploadsDir, "photos");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `photo_${Date.now()}${ext}`);
+  },
+});
+
+const docStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const dir = path.join(uploadsDir, "documents");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `doc_${Date.now()}${ext}`);
+  },
+});
+
+const attendanceStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    const dir = path.join(uploadsDir, "attendance");
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `att_${Date.now()}${ext}`);
+  },
+});
+
+const uploadPhoto = multer({ storage: photoStorage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (_req, file, cb) => {
+  if (file.mimetype.startsWith("image/")) cb(null, true);
+  else cb(new Error("Hanya file gambar yang diizinkan"));
+}});
+
+const uploadDoc = multer({ storage: docStorage, limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: (_req, file, cb) => {
+  if (file.mimetype === "application/pdf" || file.mimetype.startsWith("image/")) cb(null, true);
+  else cb(new Error("Hanya file PDF atau gambar yang diizinkan"));
+}});
+
+const uploadAttendance = multer({ storage: attendanceStorage, limits: { fileSize: 5 * 1024 * 1024 } });
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -73,7 +129,9 @@ export async function registerRoutes(
   });
 
   app.use("/api/dashboard", requireAuth);
+  app.use("/api/branches", requireAuth);
   app.use("/api/departments", requireAuth);
+  app.use("/api/sub-departments", requireAuth);
   app.use("/api/positions", requireAuth);
   app.use("/api/employees", requireAuth);
   app.use("/api/attendance", requireAuth);
@@ -147,6 +205,48 @@ export async function registerRoutes(
   app.post("/api/departments", async (req, res) => {
     const data = await storage.createDepartment(req.body);
     res.json(data);
+  });
+  app.put("/api/departments/:id", async (req, res) => {
+    const data = await storage.updateDepartment(parseInt(req.params.id), req.body);
+    res.json(data);
+  });
+  app.delete("/api/departments/:id", requireSuperAdmin, async (req, res) => {
+    await storage.deleteDepartment(parseInt(req.params.id));
+    res.json({ success: true });
+  });
+
+  app.get("/api/branches", async (_req, res) => {
+    const data = await storage.getBranches();
+    res.json(data);
+  });
+  app.post("/api/branches", async (req, res) => {
+    const data = await storage.createBranch(req.body);
+    res.json(data);
+  });
+  app.put("/api/branches/:id", async (req, res) => {
+    const data = await storage.updateBranch(parseInt(req.params.id), req.body);
+    res.json(data);
+  });
+  app.delete("/api/branches/:id", requireSuperAdmin, async (req, res) => {
+    await storage.deleteBranch(parseInt(req.params.id));
+    res.json({ success: true });
+  });
+
+  app.get("/api/sub-departments", async (_req, res) => {
+    const data = await storage.getSubDepartments();
+    res.json(data);
+  });
+  app.post("/api/sub-departments", async (req, res) => {
+    const data = await storage.createSubDepartment(req.body);
+    res.json(data);
+  });
+  app.put("/api/sub-departments/:id", async (req, res) => {
+    const data = await storage.updateSubDepartment(parseInt(req.params.id), req.body);
+    res.json(data);
+  });
+  app.delete("/api/sub-departments/:id", requireSuperAdmin, async (req, res) => {
+    await storage.deleteSubDepartment(parseInt(req.params.id));
+    res.json({ success: true });
   });
 
   app.get("/api/positions", async (_req, res) => {
@@ -684,6 +784,180 @@ export async function registerRoutes(
   app.get("/api/eligible-salary-increases", async (_req, res) => {
     const data = await storage.getEligibleForSalaryIncrease();
     res.json(data);
+  });
+
+  // Serve uploaded files
+  app.use("/uploads", requireAuth, (await import("express")).default.static(uploadsDir));
+
+  // Photo upload
+  app.post("/api/employees/:id/photo", requireAdmin, uploadPhoto.single("photo"), async (req, res) => {
+    try {
+      const empId = parseInt(req.params.id);
+      const file = req.file;
+      if (!file) return res.status(400).json({ message: "File foto diperlukan" });
+      const photoUrl = `/uploads/photos/${file.filename}`;
+      await storage.updateEmployee(empId, { photoUrl } as any);
+      res.json({ success: true, photoUrl });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Document (SK) upload
+  app.post("/api/employees/:id/documents", requireAdmin, uploadDoc.single("document"), async (req, res) => {
+    try {
+      const empId = parseInt(req.params.id);
+      const file = req.file;
+      if (!file) return res.status(400).json({ message: "File dokumen diperlukan" });
+      const fileUrl = `/uploads/documents/${file.filename}`;
+      const doc = await storage.createDocument({
+        employeeId: empId,
+        title: req.body.title || file.originalname,
+        category: req.body.category || "SK",
+        description: req.body.description || null,
+        fileUrl,
+        uploadedBy: String(req.session.userId || "admin"),
+      });
+      res.json(doc);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Delete document
+  app.delete("/api/documents/:id", requireAdmin, async (req, res) => {
+    try {
+      const docId = parseInt(req.params.id);
+      await storage.deleteDocument(docId);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Attendance CSV/Excel import
+  app.post("/api/attendance/import", requireAdmin, uploadAttendance.single("file"), async (req, res) => {
+    try {
+      const file = req.file;
+      if (!file) return res.status(400).json({ message: "File diperlukan" });
+
+      const fileExt = path.extname(file.originalname).toLowerCase();
+      const employees = await storage.getEmployees();
+      const results: any[] = [];
+      const errors: string[] = [];
+      let dataLines: any[] = [];
+
+      if (fileExt === ".csv") {
+        const content = fs.readFileSync(file.path, "utf-8");
+        const lines = content.split("\n").filter(l => l.trim());
+        dataLines = lines.slice(1).map(line => line.split(",").map(c => c.trim().replace(/"/g, "")));
+      } else if (fileExt === ".xlsx" || fileExt === ".xls") {
+        const XLSX = await import("xlsx");
+        const workbook = XLSX.readFile(file.path);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json<any[]>(worksheet, { header: 1, raw: true });
+        dataLines = jsonData.slice(1).filter((row: any[]) => row.length >= 4);
+      } else {
+        fs.unlinkSync(file.path);
+        return res.status(400).json({ message: "Format file tidak didukung. Gunakan CSV atau Excel (.xlsx/.xls)" });
+      }
+
+      for (let i = 0; i < dataLines.length; i++) {
+        let cols = dataLines[i];
+        if (cols.length < 4) {
+          errors.push(`Baris ${i + 2}: Format tidak valid (butuh NIP,Tanggal,JamMasuk,JamKeluar)`);
+          continue;
+        }
+
+        let nip = String(cols[0]).trim();
+        
+        let dateVal = cols[1];
+        let dateStr = "";
+        if (typeof dateVal === 'number') {
+          const dateObj = new Date(Math.round((dateVal - 25569) * 86400 * 1000));
+          if (!isNaN(dateObj.getTime())) dateStr = dateObj.toISOString().split('T')[0];
+          else dateStr = String(dateVal);
+        } else {
+          dateStr = String(dateVal).trim();
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const parsed = new Date(dateStr);
+            if (!isNaN(parsed.getTime())) dateStr = parsed.toISOString().split('T')[0];
+          }
+        }
+
+        const formatTime = (val: any) => {
+          if (!val && val !== 0) return "";
+          if (typeof val === 'number') {
+            const totalSeconds = Math.round(val * 86400);
+            const h = Math.floor(totalSeconds / 3600);
+            const m = Math.floor((totalSeconds % 3600) / 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+          }
+          let str = String(val).trim();
+          if (str.length === 4 && !str.includes(":")) {
+             // Handle 0800 format
+             return `${str.slice(0, 2)}:${str.slice(2, 4)}`;
+          }
+          return str;
+        };
+
+        let checkIn = formatTime(cols[2]);
+        let checkOut = formatTime(cols[3]);
+        
+        const emp = employees.find(e => e.nip === nip);
+        if (!emp) {
+          errors.push(`Baris ${i + 2}: NIP ${nip} tidak ditemukan`);
+          continue;
+        }
+
+        // Calculate late minutes (after 07:30)
+        let lateMinutes = 0;
+        if (checkIn) {
+          const [h, m] = checkIn.split(":").map(Number);
+          if (h > 7 || (h === 7 && m > 30)) {
+            lateMinutes = (h - 7) * 60 + (m - 30);
+          }
+        }
+
+        try {
+          const record = await storage.createAttendance({
+            employeeId: emp.id,
+            date: dateStr,
+            checkIn: checkIn || null,
+            checkOut: checkOut || null,
+            status: "hadir",
+            lateMinutes,
+            notes: "Import fingerprint",
+          });
+          results.push(record);
+        } catch (e: any) {
+          errors.push(`Baris ${i + 2}: ${e.message}`);
+        }
+      }
+
+      // Clean up uploaded file
+      fs.unlinkSync(file.path);
+
+      res.json({
+        success: true,
+        imported: results.length,
+        errors: errors.length,
+        errorDetails: errors.slice(0, 10),
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/dashboard/alerts", requireAdmin, async (_req, res) => {
+    try {
+      const promote = await storage.getEligibleForPromotion();
+      const salary = await storage.getEligibleForSalaryIncrease();
+      res.json({ promote, salary });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   });
 
   return httpServer;

@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, CalendarCheck, FileText, DollarSign,
   BarChart3, ArrowLeftRight, GraduationCap, FolderOpen,
   Bell, ChevronLeft, ChevronRight, Sun, Moon, Search, Menu, X,
-  ClipboardList, LogOut, Shield, TrendingUp, Clock
+  ClipboardList, LogOut, Shield, TrendingUp, Clock, Database, Network
 } from "lucide-react";
 import logoPath from "@assets/Logo_Tirta_1773201248263.png";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -28,6 +28,8 @@ const menuItems = [
   { path: "/trainings", label: "Pelatihan", icon: GraduationCap },
   { path: "/documents", label: "Dokumen", icon: FolderOpen },
   { path: "/reports", label: "Laporan", icon: ClipboardList },
+  { path: "/organization", label: "Struktur Organisasi", icon: Network },
+  { path: "/master-data", label: "Master Data", icon: Database },
 ];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {

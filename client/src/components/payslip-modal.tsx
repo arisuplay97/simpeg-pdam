@@ -72,7 +72,7 @@ export default function PayslipModal({ payrollItem, employee, deductions, positi
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #1a1a1a; }
-        @page { size: A5 landscape; margin: 10mm; }
+        @page { size: 130mm 200mm; margin: 8mm; }
         @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       </style></head><body>`);
     printWindow.document.write(printRef.current.innerHTML);
@@ -81,133 +81,143 @@ export default function PayslipModal({ payrollItem, employee, deductions, positi
     setTimeout(() => { printWindow.print(); }, 400);
   };
 
+  const joinDate = employee?.joinDate ? new Date(employee.joinDate) : null;
+  const yearsWorked = joinDate ? Math.floor((Date.now() - joinDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
+
   const buildPdf = (jsPDFConstructor: any) => {
-    const doc = new jsPDFConstructor({ orientation: "landscape", unit: "mm", format: "a5" });
+    const doc = new jsPDFConstructor({ orientation: "portrait", unit: "mm", format: [130, 200] });
     const w = doc.internal.pageSize.getWidth();
     const h = doc.internal.pageSize.getHeight();
 
-    doc.setTextColor(220, 220, 220);
-    doc.setFontSize(50);
+    doc.setTextColor(230, 230, 230);
+    doc.setFontSize(36);
     doc.text("RAHASIA", w / 2, h / 2, { align: "center", angle: 35 });
 
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(13);
-    doc.setFont("helvetica", "bold");
-    doc.text("PDAM TIRTA ARDHIA RINJANI", w / 2, 14, { align: "center" });
-    doc.setFontSize(8);
-    doc.setFont("helvetica", "normal");
-    doc.text("Jl. Jend. A Yani No.11, Praya, Kec. Praya, Kab. Lombok Tengah, NTB 83511", w / 2, 19, { align: "center" });
-
-    doc.setDrawColor(2, 132, 199);
-    doc.setLineWidth(0.8);
-    doc.line(10, 22, w - 10, 22);
-
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
-    doc.text("SLIP GAJI", w / 2, 28, { align: "center" });
-    doc.setFontSize(9);
+    doc.text("PDAM TIRTA ARDHIA RINJANI", w / 2, 12, { align: "center" });
+    doc.setFontSize(6.5);
     doc.setFont("helvetica", "normal");
-    doc.text(`Periode: ${month} ${year}`, w / 2, 33, { align: "center" });
+    doc.text("Jl. Jend. A Yani No.11, Praya, Kec. Praya, Kab. Lombok Tengah, NTB 83511", w / 2, 16, { align: "center" });
 
-    doc.setLineWidth(0.3);
-    doc.line(10, 35, w - 10, 35);
+    doc.setDrawColor(2, 132, 199);
+    doc.setLineWidth(0.7);
+    doc.line(8, 18, w - 8, 18);
 
-    let y = 40;
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("SLIP GAJI", w / 2, 23, { align: "center" });
     doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Periode: ${month} ${year}`, w / 2, 27, { align: "center" });
+
+    doc.setLineWidth(0.2);
+    doc.line(8, 29, w - 8, 29);
+
+    let y = 33;
+    doc.setFontSize(7);
     const empInfo = [
       ["Nama", employee?.fullName || "-"],
       ["NIP", employee?.nip || "-"],
       ["Jabatan", pos?.name || "-"],
       ["Bagian", dept?.name || "-"],
+      ["Golongan", employee?.grade || "-"],
+      ["Masa Kerja", `${yearsWorked} tahun`],
+      ["No. Rekening", `${employee?.bankName || "-"} - ${employee?.bankAccount || "-"}`],
     ];
     empInfo.forEach(([lbl, val]) => {
       doc.setFont("helvetica", "normal");
-      doc.text(`${lbl}`, 12, y);
-      doc.text(":", 35, y);
+      doc.text(`${lbl}`, 10, y);
+      doc.text(":", 32, y);
       doc.setFont("helvetica", "bold");
-      doc.text(val, 38, y);
-      y += 4.5;
+      doc.text(val, 35, y);
+      y += 3.8;
     });
 
     y += 2;
-    const midX = w / 2;
-
     doc.setFillColor(236, 253, 245);
-    doc.rect(10, y, midX - 14, 6, "F");
+    doc.rect(8, y, w - 16, 5, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(5, 150, 105);
-    doc.text("PENGHASILAN", 12, y + 4);
-    doc.setTextColor(0, 0, 0);
-
-    doc.setFillColor(254, 242, 242);
-    doc.rect(midX + 2, y, midX - 14, 6, "F");
-    doc.setTextColor(239, 68, 68);
-    doc.text("POTONGAN", midX + 4, y + 4);
-    doc.setTextColor(0, 0, 0);
-
-    y += 9;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(7.5);
-
-    earningsItems.forEach(item => {
-      doc.text(item.label, 12, y);
-      doc.text(formatRp(item.amount), midX - 6, y, { align: "right" });
-      y += 4;
-    });
-    const earningsEndY = y;
-
-    y = earningsEndY - (earningsItems.length * 4);
-    deductions.forEach(d => {
-      doc.text(d.label, midX + 4, y);
-      doc.text(formatRp(d.amount), w - 12, y, { align: "right" });
-      y += 4;
-    });
-
-    const maxY = Math.max(earningsEndY, y) + 2;
-
-    doc.setLineWidth(0.3);
-    doc.line(10, maxY, midX - 4, maxY);
-    doc.line(midX + 2, maxY, w - 10, maxY);
-
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.text("Total Penghasilan", 12, maxY + 4);
-    doc.setTextColor(5, 150, 105);
-    doc.text(formatRp(payrollItem.totalEarnings), midX - 6, maxY + 4, { align: "right" });
-    doc.setTextColor(0, 0, 0);
-
-    doc.text("Total Potongan", midX + 4, maxY + 4);
-    doc.setTextColor(239, 68, 68);
-    doc.text(formatRp(payrollItem.totalDeductions), w - 12, maxY + 4, { align: "right" });
-    doc.setTextColor(0, 0, 0);
-
-    const netY = maxY + 10;
-    doc.setDrawColor(2, 132, 199);
-    doc.setLineWidth(0.8);
-    doc.line(10, netY, w - 10, netY);
-    doc.setFontSize(9);
-    doc.text("GAJI BERSIH (TAKE HOME PAY)", 12, netY + 5);
-    doc.setTextColor(2, 132, 199);
-    doc.setFontSize(11);
-    doc.text(formatRp(payrollItem.netSalary), w - 12, netY + 5, { align: "right" });
-    doc.setTextColor(0, 0, 0);
-
-    const footerY = h - 25;
     doc.setFontSize(7);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Kode Slip: ${slipCode}`, 12, footerY);
+    doc.setTextColor(5, 150, 105);
+    doc.text("PENGHASILAN", 10, y + 3.5);
+    doc.setTextColor(0, 0, 0);
+    y += 7;
 
-    doc.text("Mengetahui,", w - 50, footerY);
-    doc.text("Direktur Utama", w - 50, footerY + 4);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    earningsItems.forEach(item => {
+      doc.text(item.label, 10, y);
+      doc.text(formatRp(item.amount), w - 10, y, { align: "right" });
+      y += 3.5;
+    });
+
+    doc.setLineWidth(0.2);
+    doc.line(8, y, w - 8, y);
+    y += 3.5;
     doc.setFont("helvetica", "bold");
-    doc.text("H. Doni Alga, S.E., M.M.", w - 50, footerY + 15);
-    doc.setFont("helvetica", "normal");
-    doc.line(w - 50, footerY + 16, w - 12, footerY + 16);
+    doc.setFontSize(7);
+    doc.text("Total Penghasilan", 10, y);
+    doc.setTextColor(5, 150, 105);
+    doc.text(formatRp(payrollItem.totalEarnings), w - 10, y, { align: "right" });
+    doc.setTextColor(0, 0, 0);
 
+    y += 5;
+    doc.setFillColor(254, 242, 242);
+    doc.rect(8, y, w - 16, 5, "F");
+    doc.setTextColor(239, 68, 68);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.text("POTONGAN", 10, y + 3.5);
+    doc.setTextColor(0, 0, 0);
+    y += 7;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6.5);
+    deductions.forEach(d => {
+      doc.text(d.label, 10, y);
+      doc.text(formatRp(d.amount), w - 10, y, { align: "right" });
+      y += 3.5;
+    });
+
+    doc.setLineWidth(0.2);
+    doc.line(8, y, w - 8, y);
+    y += 3.5;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.text("Total Potongan", 10, y);
+    doc.setTextColor(239, 68, 68);
+    doc.text(formatRp(payrollItem.totalDeductions), w - 10, y, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+
+    y += 5;
+    doc.setDrawColor(2, 132, 199);
+    doc.setLineWidth(0.7);
+    doc.line(8, y, w - 8, y);
+    y += 4;
+    doc.setFontSize(8);
+    doc.text("GAJI BERSIH (TAKE HOME PAY)", 10, y);
+    doc.setTextColor(2, 132, 199);
+    doc.setFontSize(10);
+    doc.text(formatRp(payrollItem.netSalary), w - 10, y, { align: "right" });
+    doc.setTextColor(0, 0, 0);
+
+    const footerY = h - 22;
     doc.setFontSize(6);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Kode Slip: ${slipCode}`, 10, footerY);
+
+    doc.text("Mengetahui,", w - 45, footerY);
+    doc.text("Direktur Utama", w - 45, footerY + 3.5);
+    doc.setFont("helvetica", "bold");
+    doc.text("H. Doni Alga, S.E., M.M.", w - 45, footerY + 13);
+    doc.setFont("helvetica", "normal");
+    doc.line(w - 45, footerY + 14, w - 10, footerY + 14);
+
+    doc.setFontSize(5);
     doc.setTextColor(180, 180, 180);
-    doc.text("Dokumen ini dicetak secara digital dan sah tanpa tanda tangan basah", w / 2, h - 5, { align: "center" });
+    doc.text("Dokumen ini dicetak secara digital dan sah tanpa tanda tangan basah", w / 2, h - 4, { align: "center" });
 
     return doc;
   };
@@ -260,85 +270,82 @@ export default function PayslipModal({ payrollItem, employee, deductions, positi
 
         <div className="overflow-y-auto flex-1 p-6">
           <div ref={printRef}>
-            <div style={{ maxWidth: 700, margin: "0 auto", fontFamily: "'Segoe UI', Arial, sans-serif", color: "#1a1a1a", fontSize: 12, position: "relative" }}>
-              <div style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%, -50%) rotate(-35deg)", fontSize: 80, color: "rgba(200,200,200,0.15)", fontWeight: "bold", pointerEvents: "none", whiteSpace: "nowrap", zIndex: 0 }}>RAHASIA</div>
+            <div style={{ maxWidth: 420, margin: "0 auto", fontFamily: "'Segoe UI', Arial, sans-serif", color: "#1a1a1a", fontSize: 11, position: "relative" }}>
+              <div style={{ position: "absolute", top: "40%", left: "50%", transform: "translate(-50%, -50%) rotate(-35deg)", fontSize: 60, color: "rgba(200,200,200,0.12)", fontWeight: "bold", pointerEvents: "none", whiteSpace: "nowrap", zIndex: 0 }}>RAHASIA</div>
 
               <div style={{ position: "relative", zIndex: 1 }}>
-                <div style={{ textAlign: "center", marginBottom: 8 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 4 }}>
-                    <img src="/images/logo.png" alt="Logo" style={{ width: 48, height: 48, objectFit: "contain" }} />
+                <div style={{ textAlign: "center", marginBottom: 6 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 4 }}>
+                    <img src="/images/logo.png" alt="Logo" style={{ width: 40, height: 40, objectFit: "contain" }} />
                     <div>
-                      <div style={{ fontSize: 16, fontWeight: "bold", color: "#0284c7" }}>PDAM TIRTA ARDHIA RINJANI</div>
-                      <div style={{ fontSize: 9, color: "#666" }}>Jl. Jend. A Yani No.11, Praya, Kec. Praya, Kab. Lombok Tengah, NTB 83511</div>
+                      <div style={{ fontSize: 14, fontWeight: "bold", color: "#0284c7" }}>PDAM TIRTA ARDHIA RINJANI</div>
+                      <div style={{ fontSize: 8, color: "#666" }}>Jl. Jend. A Yani No.11, Praya, Kec. Praya, Kab. Lombok Tengah, NTB 83511</div>
                     </div>
                   </div>
                 </div>
 
-                <div style={{ borderTop: "2px solid #0284c7", borderBottom: "1px solid #ddd", padding: "8px 0", textAlign: "center", marginBottom: 12 }}>
-                  <div style={{ fontSize: 14, fontWeight: "bold", letterSpacing: 2 }}>SLIP GAJI</div>
-                  <div style={{ fontSize: 11, color: "#555" }}>Periode: {month} {year}</div>
+                <div style={{ borderTop: "2px solid #0284c7", borderBottom: "1px solid #ddd", padding: "6px 0", textAlign: "center", marginBottom: 10 }}>
+                  <div style={{ fontSize: 13, fontWeight: "bold", letterSpacing: 2 }}>SLIP GAJI</div>
+                  <div style={{ fontSize: 10, color: "#555" }}>Periode: {month} {year}</div>
                 </div>
 
-                <table style={{ width: "100%", marginBottom: 16, fontSize: 11 }}>
+                <table style={{ width: "100%", marginBottom: 12, fontSize: 10 }}>
                   <tbody>
-                    <tr><td style={{ width: 90, padding: "2px 0", color: "#555" }}>Nama</td><td style={{ width: 10 }}>:</td><td style={{ fontWeight: 600 }}>{employee?.fullName || "-"}</td></tr>
+                    <tr><td style={{ width: 80, padding: "2px 0", color: "#555" }}>Nama</td><td style={{ width: 10 }}>:</td><td style={{ fontWeight: 600 }}>{employee?.fullName || "-"}</td></tr>
                     <tr><td style={{ padding: "2px 0", color: "#555" }}>NIP</td><td>:</td><td style={{ fontWeight: 600 }}>{employee?.nip || "-"}</td></tr>
                     <tr><td style={{ padding: "2px 0", color: "#555" }}>Jabatan</td><td>:</td><td style={{ fontWeight: 600 }}>{pos?.name || "-"}</td></tr>
                     <tr><td style={{ padding: "2px 0", color: "#555" }}>Bagian</td><td>:</td><td style={{ fontWeight: 600 }}>{dept?.name || "-"}</td></tr>
+                    <tr><td style={{ padding: "2px 0", color: "#555" }}>Golongan</td><td>:</td><td style={{ fontWeight: 600 }}>{employee?.grade || "-"}</td></tr>
+                    <tr><td style={{ padding: "2px 0", color: "#555" }}>Masa Kerja</td><td>:</td><td style={{ fontWeight: 600 }}>{yearsWorked} tahun</td></tr>
+                    <tr><td style={{ padding: "2px 0", color: "#555" }}>No. Rekening</td><td>:</td><td style={{ fontWeight: 600 }}>{employee?.bankName || "-"} - {employee?.bankAccount || "-"}</td></tr>
                   </tbody>
                 </table>
 
-                <div style={{ display: "flex", gap: 16 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ background: "#ecfdf5", padding: "6px 10px", fontWeight: 700, fontSize: 11, color: "#059669", borderRadius: 4, marginBottom: 8 }}>PENGHASILAN</div>
-                    <table style={{ width: "100%", fontSize: 11 }}>
-                      <tbody>
-                        {earningsItems.map((item, i) => (
-                          <tr key={i}>
-                            <td style={{ padding: "3px 0", color: "#444" }}>{item.label}</td>
-                            <td style={{ textAlign: "right", fontFamily: "monospace", padding: "3px 0" }}>{formatRp(item.amount)}</td>
-                          </tr>
-                        ))}
-                        <tr style={{ borderTop: "1px solid #ccc" }}>
-                          <td style={{ padding: "6px 0", fontWeight: 700 }}>Total Penghasilan</td>
-                          <td style={{ textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: "#059669", padding: "6px 0" }}>{formatRp(payrollItem.totalEarnings)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                <div style={{ background: "#ecfdf5", padding: "5px 10px", fontWeight: 700, fontSize: 10, color: "#059669", borderRadius: 4, marginBottom: 6 }}>PENGHASILAN</div>
+                <table style={{ width: "100%", fontSize: 10, marginBottom: 8 }}>
+                  <tbody>
+                    {earningsItems.map((item, i) => (
+                      <tr key={i}>
+                        <td style={{ padding: "2px 0", color: "#444" }}>{item.label}</td>
+                        <td style={{ textAlign: "right", fontFamily: "monospace", padding: "2px 0" }}>{formatRp(item.amount)}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ borderTop: "1px solid #ccc" }}>
+                      <td style={{ padding: "4px 0", fontWeight: 700 }}>Total Penghasilan</td>
+                      <td style={{ textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: "#059669", padding: "4px 0" }}>{formatRp(payrollItem.totalEarnings)}</td>
+                    </tr>
+                  </tbody>
+                </table>
 
-                  <div style={{ flex: 1 }}>
-                    <div style={{ background: "#fef2f2", padding: "6px 10px", fontWeight: 700, fontSize: 11, color: "#ef4444", borderRadius: 4, marginBottom: 8 }}>POTONGAN</div>
-                    <table style={{ width: "100%", fontSize: 11 }}>
-                      <tbody>
-                        {deductions.map(d => (
-                          <tr key={d.id}>
-                            <td style={{ padding: "3px 0", color: "#444" }}>{d.label}</td>
-                            <td style={{ textAlign: "right", fontFamily: "monospace", color: "#ef4444", padding: "3px 0" }}>{formatRp(d.amount)}</td>
-                          </tr>
-                        ))}
-                        <tr style={{ borderTop: "1px solid #ccc" }}>
-                          <td style={{ padding: "6px 0", fontWeight: 700 }}>Total Potongan</td>
-                          <td style={{ textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: "#ef4444", padding: "6px 0" }}>{formatRp(payrollItem.totalDeductions)}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
+                <div style={{ background: "#fef2f2", padding: "5px 10px", fontWeight: 700, fontSize: 10, color: "#ef4444", borderRadius: 4, marginBottom: 6 }}>POTONGAN</div>
+                <table style={{ width: "100%", fontSize: 10, marginBottom: 8 }}>
+                  <tbody>
+                    {deductions.map(d => (
+                      <tr key={d.id}>
+                        <td style={{ padding: "2px 0", color: "#444" }}>{d.label}</td>
+                        <td style={{ textAlign: "right", fontFamily: "monospace", color: "#ef4444", padding: "2px 0" }}>{formatRp(d.amount)}</td>
+                      </tr>
+                    ))}
+                    <tr style={{ borderTop: "1px solid #ccc" }}>
+                      <td style={{ padding: "4px 0", fontWeight: 700 }}>Total Potongan</td>
+                      <td style={{ textAlign: "right", fontWeight: 700, fontFamily: "monospace", color: "#ef4444", padding: "4px 0" }}>{formatRp(payrollItem.totalDeductions)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div style={{ borderTop: "2px solid #0284c7", marginTop: 12, padding: "8px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 11, fontWeight: 700 }}>GAJI BERSIH (TAKE HOME PAY)</span>
+                  <span style={{ fontSize: 14, fontWeight: 700, fontFamily: "monospace", color: "#0284c7" }}>{formatRp(payrollItem.netSalary)}</span>
                 </div>
 
-                <div style={{ borderTop: "2px solid #0284c7", marginTop: 16, padding: "10px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 13, fontWeight: 700 }}>GAJI BERSIH (TAKE HOME PAY)</span>
-                  <span style={{ fontSize: 16, fontWeight: 700, fontFamily: "monospace", color: "#0284c7" }}>{formatRp(payrollItem.netSalary)}</span>
-                </div>
-
-                <div style={{ marginTop: 24, display: "flex", justifyContent: "space-between", fontSize: 10 }}>
+                <div style={{ marginTop: 20, display: "flex", justifyContent: "space-between", fontSize: 9 }}>
                   <div>
                     <div style={{ color: "#999", marginBottom: 2 }}>Kode Slip: {slipCode}</div>
-                    <div style={{ color: "#bbb", fontSize: 9 }}>Dokumen ini dicetak secara digital dan sah tanpa tanda tangan basah</div>
+                    <div style={{ color: "#bbb", fontSize: 8 }}>Dokumen ini dicetak secara digital dan sah tanpa tanda tangan basah</div>
                   </div>
-                  <div style={{ textAlign: "center", minWidth: 160 }}>
+                  <div style={{ textAlign: "center", minWidth: 140 }}>
                     <div style={{ color: "#555" }}>Mengetahui,</div>
-                    <div style={{ color: "#555", marginBottom: 36 }}>Direktur Utama</div>
+                    <div style={{ color: "#555", marginBottom: 30 }}>Direktur Utama</div>
                     <div style={{ fontWeight: 700, borderTop: "1px solid #333", paddingTop: 4, display: "inline-block" }}>H. Doni Alga, S.E., M.M.</div>
                   </div>
                 </div>

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
-import type { Employee, Department, Attendance, Payroll, PerformanceReview, LeaveRequest } from "@shared/schema";
+import type { Employee, Department, Attendance, Payroll, PerformanceReview, LeaveRequest, Mutation, RankPromotion, Document as DocType, Branch, SubDepartment } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { ArrowLeft, Mail, Phone, MapPin, Calendar, Building2, GraduationCap, CreditCard, Heart, Clock, AlertTriangle, Pencil, UserPlus, Key, Trash2 } from "lucide-react";
+import { ArrowLeft, Mail, Phone, MapPin, Calendar, Building2, GraduationCap, CreditCard, Heart, Clock, AlertTriangle, Pencil, UserPlus, Key, Trash2, Camera, Upload, FolderOpen, History, ExternalLink, FileText, TrendingUp } from "lucide-react";
 
 export default function EmployeeDetail() {
   const [, params] = useRoute("/employees/:id");
@@ -31,9 +31,9 @@ export default function EmployeeDetail() {
     enabled: employeeId > 0,
   });
 
-  const { data: departments = [] } = useQuery<Department[]>({
-    queryKey: ["/api/departments"],
-  });
+  const { data: departments = [] } = useQuery<Department[]>({ queryKey: ["/api/departments"] });
+  const { data: branches = [] } = useQuery<Branch[]>({ queryKey: ["/api/branches"] });
+  const { data: subDepartments = [] } = useQuery<SubDepartment[]>({ queryKey: ["/api/sub-departments"] });
 
   const { data: attendanceData = [] } = useQuery<Attendance[]>({
     queryKey: ["/api/attendance/employee", employeeId],
@@ -55,6 +55,21 @@ export default function EmployeeDetail() {
     enabled: employeeId > 0,
   });
 
+  const { data: mutationsData = [] } = useQuery<Mutation[]>({
+    queryKey: ["/api/mutations/employee", employeeId],
+    enabled: employeeId > 0,
+  });
+
+  const { data: rankPromotionsData = [] } = useQuery<RankPromotion[]>({
+    queryKey: ["/api/rank-promotions/employee", employeeId],
+    enabled: employeeId > 0,
+  });
+
+  const { data: documentsData = [] } = useQuery<DocType[]>({
+    queryKey: ["/api/documents/employee", employeeId],
+    enabled: employeeId > 0,
+  });
+
   const { data: userAccount } = useQuery<{ exists: boolean; username?: string; role?: string; id?: string }>({
     queryKey: ["/api/users/employee", employeeId],
     enabled: employeeId > 0 && isSuperAdmin,
@@ -70,7 +85,21 @@ export default function EmployeeDetail() {
     );
   }
 
-  const dept = departments.find(d => d.id === employee.departmentId);
+  const getLocationName = () => {
+    if (employee.officeType === "pusat") {
+      const dept = departments.find(d => d.id === employee.departmentId);
+      return `Pusat ${dept ? `- ${dept.name}` : ""}`;
+    } else {
+      const branch = branches.find(b => b.id === employee.branchId);
+      return `Cabang ${branch ? `- ${branch.name}` : ""}`;
+    }
+  };
+
+  const getSubDeptName = () => {
+    return subDepartments.find(s => s.id === employee.subDepartmentId)?.name || '—';
+  };
+
+  const currentDeptStr = getLocationName();
   const joinDate = employee.joinDate ? new Date(employee.joinDate) : null;
   const yearsWorked = joinDate ? Math.floor((Date.now() - joinDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
 
@@ -98,7 +127,7 @@ export default function EmployeeDetail() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight" data-testid="text-employee-name">{employee.fullName}</h1>
-            <p className="text-sm text-muted-foreground">{employee.nip} · {dept?.name || "—"}</p>
+            <p className="text-sm text-muted-foreground" title={employee.structuralPosition?.replace('_', ' ').toUpperCase()}>{employee.nip} · {currentDeptStr} · {employee.structuralPosition?.replace('_', ' ').toUpperCase()}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -118,11 +147,36 @@ export default function EmployeeDetail() {
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-2xl font-bold text-primary">{employee.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}</span>
+            <div className="relative group">
+              {employee.photoUrl ? (
+                <img src={employee.photoUrl} alt={employee.fullName} className="w-20 h-20 rounded-2xl object-cover" />
+              ) : (
+                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <span className="text-2xl font-bold text-primary">{employee.fullName.split(' ').map(n => n[0]).join('').slice(0, 2)}</span>
+                </div>
+              )}
+              {isAdmin && (
+                <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                  <Camera className="w-5 h-5 text-white" />
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    try {
+                      const res = await fetch(`/api/employees/${employee.id}/photo`, { method: 'POST', body: formData, credentials: 'include' });
+                      if (res.ok) {
+                        queryClient.invalidateQueries({ queryKey: ["/api/employees", employeeId] });
+                        toast({ title: "Foto berhasil diupload" });
+                      }
+                    } catch { toast({ title: "Gagal upload foto", variant: "destructive" }); }
+                  }} />
+                </label>
+              )}
             </div>
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              <InfoItem icon={Building2} label="Bagian" value={dept?.name || "—"} />
+              <InfoItem icon={Building2} label="Bagian / Lokasi" value={currentDeptStr} />
+              <InfoItem icon={Building2} label="Sub-Bidang / Bagian" value={getSubDeptName()} />
               <InfoItem icon={GraduationCap} label="Pendidikan" value={employee.education || "—"} />
               <InfoItem icon={Calendar} label="Masa Kerja" value={`${yearsWorked} tahun`} />
               <InfoItem icon={Mail} label="Email" value={employee.email || "—"} />
@@ -148,11 +202,13 @@ export default function EmployeeDetail() {
       )}
 
       <Tabs defaultValue="attendance" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid">
           <TabsTrigger value="attendance" data-testid="tab-attendance">Absensi</TabsTrigger>
           <TabsTrigger value="payroll" data-testid="tab-payroll">Gaji</TabsTrigger>
           <TabsTrigger value="performance" data-testid="tab-performance">Kinerja</TabsTrigger>
           <TabsTrigger value="leave" data-testid="tab-leave">Cuti</TabsTrigger>
+          <TabsTrigger value="documents" data-testid="tab-documents">Dokumen</TabsTrigger>
+          <TabsTrigger value="history" data-testid="tab-history">Riwayat</TabsTrigger>
         </TabsList>
 
         <TabsContent value="attendance">
@@ -253,7 +309,24 @@ export default function EmployeeDetail() {
         <TabsContent value="leave">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Riwayat Cuti & Izin</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Riwayat Cuti & Izin</CardTitle>
+                {(() => {
+                  const thisYear = new Date().getFullYear();
+                  const usedDays = leaveData.filter(l => l.type === "Cuti Tahunan" && l.status === "approved" && l.startDate && new Date(l.startDate).getFullYear() === thisYear).reduce((s, l) => s + l.days, 0);
+                  const quota = employee.annualLeaveQuota ?? 12;
+                  const remaining = quota - usedDays;
+                  return (
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-[11px] text-muted-foreground">Sisa Cuti {thisYear}</p>
+                        <p className={`text-lg font-bold ${remaining <= 2 ? 'text-red-500' : 'text-primary'}`}>{remaining} / {quota} hari</p>
+                      </div>
+                      <Progress value={quota > 0 ? (usedDays / quota) * 100 : 0} className="w-24 h-2" />
+                    </div>
+                  );
+                })()}
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
@@ -274,12 +347,126 @@ export default function EmployeeDetail() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Documents Tab */}
+        <TabsContent value="documents">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2"><FolderOpen className="w-4 h-4" /> Dokumen SK & Berkas</CardTitle>
+                {isAdmin && (
+                  <label className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer">
+                    <Upload className="w-3.5 h-3.5" /> Upload Dokumen
+                    <input type="file" accept="application/pdf,image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const title = prompt("Judul dokumen:", file.name);
+                      if (!title) return;
+                      const category = prompt("Kategori (SK Pengangkatan/SK Kenaikan Pangkat/SK Mutasi/Lainnya):", "SK Pengangkatan");
+                      const formData = new FormData();
+                      formData.append('document', file);
+                      formData.append('title', title);
+                      formData.append('category', category || 'SK');
+                      try {
+                        const res = await fetch(`/api/employees/${employee.id}/documents`, { method: 'POST', body: formData, credentials: 'include' });
+                        if (res.ok) {
+                          queryClient.invalidateQueries({ queryKey: ["/api/documents/employee", employeeId] });
+                          toast({ title: "Dokumen berhasil diupload" });
+                        }
+                      } catch { toast({ title: "Gagal upload", variant: "destructive" }); }
+                    }} />
+                  </label>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {documentsData.map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-red-500" />
+                      <div>
+                        <p className="text-sm font-medium">{doc.title}</p>
+                        <p className="text-xs text-muted-foreground">{doc.category} · {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('id-ID') : ''}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {doc.fileUrl && (
+                        <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg hover:bg-muted transition-colors">
+                          <ExternalLink className="w-4 h-4 text-primary" />
+                        </a>
+                      )}
+                      {isAdmin && (
+                        <button onClick={async () => {
+                          if (!confirm('Hapus dokumen ini?')) return;
+                          await fetch(`/api/documents/${doc.id}`, { method: 'DELETE', credentials: 'include' });
+                          queryClient.invalidateQueries({ queryKey: ["/api/documents/employee", employeeId] });
+                          toast({ title: "Dokumen dihapus" });
+                        }} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {documentsData.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">Belum ada dokumen</p>}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* History Tab */}
+        <TabsContent value="history">
+          <div className="space-y-4">
+            <Card>
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><History className="w-4 h-4" /> Riwayat Jabatan (Mutasi)</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {mutationsData.map(m => (
+                    <div key={m.id} className="p-3 rounded-lg border border-border/50 bg-muted/20">
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge variant={m.status === 'approved' ? 'default' : m.status === 'rejected' ? 'destructive' : 'secondary'} className="text-[10px]">{m.status}</Badge>
+                        <span className="text-xs text-muted-foreground">{m.effectiveDate ? new Date(m.effectiveDate).toLocaleDateString('id-ID') : ''}</span>
+                      </div>
+                      <p className="text-sm"><span className="text-muted-foreground">Dari:</span> {m.fromPosition || '-'} ({m.fromDepartment || '-'})</p>
+                      <p className="text-sm"><span className="text-muted-foreground">Ke:</span> <span className="font-semibold">{m.toPosition || '-'}</span> ({m.toDepartment || '-'})</p>
+                      {m.skNumber && <p className="text-xs text-muted-foreground mt-1">SK: {m.skNumber}</p>}
+                      {m.reason && <p className="text-xs text-muted-foreground">{m.reason}</p>}
+                    </div>
+                  ))}
+                  {mutationsData.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Belum ada riwayat mutasi jabatan</p>}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="w-4 h-4" /> Riwayat Kenaikan Pangkat / Golongan</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {rankPromotionsData.map(rp => (
+                    <div key={rp.id} className="p-3 rounded-lg border border-border/50 bg-muted/20">
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge variant={rp.status === 'approved' ? 'default' : rp.status === 'rejected' ? 'destructive' : 'secondary'} className="text-[10px]">{rp.status}</Badge>
+                        <span className="text-xs text-muted-foreground">{rp.promotionDate ? new Date(rp.promotionDate).toLocaleDateString('id-ID') : rp.scheduledDate ? new Date(rp.scheduledDate).toLocaleDateString('id-ID') : ''}</span>
+                      </div>
+                      <p className="text-sm">Golongan: <span className="text-muted-foreground">{rp.fromGrade}</span> → <span className="font-bold text-primary">{rp.toGrade}</span></p>
+                      {rp.skNumber && <p className="text-xs text-muted-foreground mt-1">SK: {rp.skNumber}</p>}
+                    </div>
+                  ))}
+                  {rankPromotionsData.length === 0 && <p className="text-sm text-muted-foreground text-center py-6">Belum ada riwayat kenaikan pangkat</p>}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {isAdmin && (
         <EditEmployeeDialog
           employee={employee}
           departments={departments}
+          branches={branches}
+          subDepartments={subDepartments}
           open={showEdit}
           onOpenChange={setShowEdit}
         />
@@ -298,9 +485,11 @@ export default function EmployeeDetail() {
   );
 }
 
-function EditEmployeeDialog({ employee, departments, open, onOpenChange }: {
+function EditEmployeeDialog({ employee, departments, branches, subDepartments, open, onOpenChange }: {
   employee: Employee;
   departments: Department[];
+  branches: Branch[];
+  subDepartments: SubDepartment[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -315,7 +504,12 @@ function EditEmployeeDialog({ employee, departments, open, onOpenChange }: {
     email: employee.email || "",
     religion: employee.religion || "",
     education: employee.education || "",
+    major: employee.major || "",
+    officeType: employee.officeType || "pusat",
+    branchId: employee.branchId ? String(employee.branchId) : "",
     departmentId: employee.departmentId ? String(employee.departmentId) : "",
+    subDepartmentId: employee.subDepartmentId ? String(employee.subDepartmentId) : "",
+    structuralPosition: employee.structuralPosition || "staff",
     status: employee.status,
     employeeType: employee.employeeType,
     grade: employee.grade || "",
@@ -326,6 +520,7 @@ function EditEmployeeDialog({ employee, departments, open, onOpenChange }: {
     bankName: employee.bankName || "",
     maritalStatus: employee.maritalStatus || "",
     contractEndDate: employee.contractEndDate || "",
+    annualLeaveQuota: employee.annualLeaveQuota !== undefined ? String(employee.annualLeaveQuota) : "12",
   });
 
   const updateMutation = useMutation({
@@ -344,12 +539,19 @@ function EditEmployeeDialog({ employee, departments, open, onOpenChange }: {
     },
   });
 
+  const isPusat = form.officeType === "pusat";
+  const disableSubDept = (isPusat && ["direktur", "kabid"].includes(form.structuralPosition)) || (!isPusat && form.structuralPosition === "kepala_cabang");
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     updateMutation.mutate({
       ...form,
-      departmentId: form.departmentId ? parseInt(form.departmentId) : null,
+      departmentId: isPusat && form.departmentId ? parseInt(form.departmentId) : null,
+      branchId: !isPusat && form.branchId ? parseInt(form.branchId) : null,
+      subDepartmentId: !disableSubDept && form.subDepartmentId ? parseInt(form.subDepartmentId) : null,
       contractEndDate: form.contractEndDate || null,
+      annualLeaveQuota: parseInt(form.annualLeaveQuota) || 12,
+      major: form.major || null,
     });
   };
 
@@ -360,6 +562,82 @@ function EditEmployeeDialog({ employee, departments, open, onOpenChange }: {
           <DialogTitle>Edit Data Pegawai</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="bg-muted p-4 rounded-xl border mb-4 space-y-4">
+            <h3 className="font-semibold text-sm">Lokasi & Jabatan Struktural</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Tipe Kantor</label>
+                <Select value={form.officeType} onValueChange={v => setForm({...form, officeType: v, structuralPosition: v === "pusat" ? "staff" : "staff", departmentId: "", branchId: "", subDepartmentId: ""})}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pusat">Kantor Pusat</SelectItem>
+                    <SelectItem value="cabang">Kantor Cabang</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Jabatan Struktural</label>
+                <Select value={form.structuralPosition} onValueChange={v => setForm({...form, structuralPosition: v, subDepartmentId: ""})}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {isPusat ? (
+                      <>
+                        <SelectItem value="direktur">Direktur</SelectItem>
+                        <SelectItem value="kabid">Kepala Bidang (Kabid)</SelectItem>
+                        <SelectItem value="kasubbid">Kepala Sub-Bidang (Kasubbid)</SelectItem>
+                        <SelectItem value="staff">Staff Pusat</SelectItem>
+                      </>
+                    ) : (
+                      <>
+                        <SelectItem value="kepala_cabang">Kepala Cabang</SelectItem>
+                        <SelectItem value="kasubbid">Kepala Bagian (Kasubbid)</SelectItem>
+                        <SelectItem value="staff">Staff Cabang</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {isPusat ? (
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Bidang {form.structuralPosition !== 'direktur' && <span className="text-red-500">*</span>}</label>
+                  <Select value={form.departmentId} onValueChange={v => setForm({...form, departmentId: v})} disabled={form.structuralPosition === 'direktur'} required={form.structuralPosition !== 'direktur'}>
+                    <SelectTrigger><SelectValue placeholder="Pilih Bidang" /></SelectTrigger>
+                    <SelectContent>
+                      {departments.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Cabang <span className="text-red-500">*</span></label>
+                  <Select value={form.branchId} onValueChange={v => setForm({...form, branchId: v})} required>
+                    <SelectTrigger><SelectValue placeholder="Pilih Cabang" /></SelectTrigger>
+                    <SelectContent>
+                      {branches.map(b => <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div>
+                <label className={`text-sm font-medium mb-1.5 block ${disableSubDept ? 'text-muted-foreground' : ''}`}>
+                  Sub-Bidang / Bagian {!disableSubDept && <span className="text-red-500">*</span>}
+                </label>
+                <Select value={form.subDepartmentId} onValueChange={v => setForm({...form, subDepartmentId: v})} disabled={disableSubDept} required={!disableSubDept}>
+                  <SelectTrigger><SelectValue placeholder={disableSubDept ? "Tidak Perlu Sub-Bidang" : "Pilih Sub-Bidang"} /></SelectTrigger>
+                  <SelectContent>
+                    {subDepartments.filter(sd => isPusat ? sd.departmentId === parseInt(form.departmentId||'0') : sd.branchId === parseInt(form.branchId||'0'))
+                      .map(sd => <SelectItem key={sd.id} value={String(sd.id)}>{sd.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {!disableSubDept && (
+                  <p className="text-[10px] text-muted-foreground mt-1">Note: Pilih Bidang/Cabang terlebih dahulu.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Nama Lengkap</label>
@@ -407,21 +685,31 @@ function EditEmployeeDialog({ employee, departments, open, onOpenChange }: {
               </Select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Pendidikan</label>
-              <Input value={form.education} onChange={e => setForm({...form, education: e.target.value})} data-testid="edit-input-education" />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1.5 block">Bagian</label>
-              <Select value={form.departmentId} onValueChange={v => setForm({...form, departmentId: v})}>
-                <SelectTrigger data-testid="edit-select-department"><SelectValue placeholder="Pilih Bagian" /></SelectTrigger>
+              <label className="text-sm font-medium mb-1.5 block">Pendidikan Dasar/Terakhir</label>
+              <Select value={form.education} onValueChange={v => setForm({...form, education: v})}>
+                <SelectTrigger data-testid="edit-select-education"><SelectValue placeholder="Pilih Pendidikan" /></SelectTrigger>
                 <SelectContent>
-                  {departments.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
+                  {["SD", "SMP", "SMA/SMK", "D1", "D2", "D3", "D4", "S1", "S2", "S3"].map(level => (
+                    <SelectItem key={level} value={level}>{level}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
+              <label className="text-sm font-medium mb-1.5 block">Jurusan (Opsional)</label>
+              <Input value={form.major} onChange={e => setForm({...form, major: e.target.value})} placeholder="Contoh: Teknik Mesin" data-testid="edit-input-major" />
+            </div>
+
+            <div>
               <label className="text-sm font-medium mb-1.5 block">Golongan</label>
-              <Input value={form.grade} onChange={e => setForm({...form, grade: e.target.value})} data-testid="edit-input-grade" />
+              <Select value={form.grade} onValueChange={v => setForm({...form, grade: v})}>
+                <SelectTrigger data-testid="edit-select-grade"><SelectValue placeholder="Pilih Golongan" /></SelectTrigger>
+                <SelectContent>
+                  {["I/a", "I/b", "I/c", "I/d", "II/a", "II/b", "II/c", "II/d", "III/a", "III/b", "III/c", "III/d", "IV/a", "IV/b", "IV/c", "IV/d", "IV/e"].map(g => (
+                    <SelectItem key={g} value={g}>Gol. {g}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Status</label>
@@ -480,6 +768,10 @@ function EditEmployeeDialog({ employee, departments, open, onOpenChange }: {
             <div>
               <label className="text-sm font-medium mb-1.5 block">No. Rekening</label>
               <Input value={form.bankAccount} onChange={e => setForm({...form, bankAccount: e.target.value})} data-testid="edit-input-bankaccount" />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Jatah Cuti Tahunan (Hari)</label>
+              <Input type="number" min="0" value={form.annualLeaveQuota} onChange={e => setForm({...form, annualLeaveQuota: e.target.value})} data-testid="edit-input-leave-quota" />
             </div>
           </div>
           <Button type="submit" className="w-full" disabled={updateMutation.isPending} data-testid="btn-submit-edit">

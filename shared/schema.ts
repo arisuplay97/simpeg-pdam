@@ -1,7 +1,22 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, date, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, date, timestamp, boolean, jsonb, json } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+export const sessions = pgTable("session", {
+  sid: varchar("sid").primaryKey(),
+  sess: json("sess").notNull(),
+  expire: timestamp("expire", { precision: 6 }).notNull(),
+});
+
+export const branches = pgTable("branches", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  name: text("name").notNull(),
+  address: text("address"),
+  phone: text("phone"),
+  headId: integer("head_id"), // references employees.id, added lazily to avoid circular TS issues
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 export const departments = pgTable("departments", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -9,6 +24,16 @@ export const departments = pgTable("departments", {
   code: text("code").notNull().unique(),
   headName: text("head_name"),
   description: text("description"),
+  managerId: integer("manager_id"), // Kabid
+});
+
+export const subDepartments = pgTable("sub_departments", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  departmentId: integer("department_id").references(() => departments.id),
+  branchId: integer("branch_id").references(() => branches.id),
+  name: text("name").notNull(),
+  managerId: integer("manager_id"), // Kasubbid
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const positions = pgTable("positions", {
@@ -30,8 +55,16 @@ export const employees = pgTable("employees", {
   email: text("email"),
   religion: text("religion"),
   education: text("education"),
+  major: text("major"),
   departmentId: integer("department_id").references(() => departments.id),
   positionId: integer("position_id").references(() => positions.id),
+  
+  // New structural fields
+  officeType: text("office_type").notNull().default("pusat"), // 'pusat' | 'cabang'
+  branchId: integer("branch_id").references(() => branches.id),
+  subDepartmentId: integer("sub_department_id").references(() => subDepartments.id),
+  structuralPosition: text("structural_position"), // 'direktur' | 'kabid' | 'kepala_cabang' | 'kasubbid' | 'staff'
+
   status: text("status").notNull().default("aktif"),
   employeeType: text("employee_type").notNull().default("tetap"),
   grade: text("grade"),
@@ -46,6 +79,7 @@ export const employees = pgTable("employees", {
   lastSalaryIncreaseDate: date("last_salary_increase_date"),
   probationEndDate: date("probation_end_date"),
   contractEndDate: date("contract_end_date"),
+  annualLeaveQuota: integer("annual_leave_quota").notNull().default(12),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -264,7 +298,9 @@ export const exportLogs = pgTable("export_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const insertBranchSchema = createInsertSchema(branches).omit({ id: true, createdAt: true });
 export const insertDepartmentSchema = createInsertSchema(departments).omit({ id: true });
+export const insertSubDepartmentSchema = createInsertSchema(subDepartments).omit({ id: true, createdAt: true });
 export const insertPositionSchema = createInsertSchema(positions).omit({ id: true });
 export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true });
 export const insertAttendanceSchema = createInsertSchema(attendance).omit({ id: true });
@@ -284,8 +320,12 @@ export const insertPayslipLogSchema = createInsertSchema(payslipLogs).omit({ id:
 export const insertApprovalLogSchema = createInsertSchema(approvalLogs).omit({ id: true, createdAt: true });
 export const insertExportLogSchema = createInsertSchema(exportLogs).omit({ id: true, createdAt: true });
 
+export type Branch = typeof branches.$inferSelect;
+export type InsertBranch = z.infer<typeof insertBranchSchema>;
 export type Department = typeof departments.$inferSelect;
 export type InsertDepartment = z.infer<typeof insertDepartmentSchema>;
+export type SubDepartment = typeof subDepartments.$inferSelect;
+export type InsertSubDepartment = z.infer<typeof insertSubDepartmentSchema>;
 export type Position = typeof positions.$inferSelect;
 export type InsertPosition = z.infer<typeof insertPositionSchema>;
 export type Employee = typeof employees.$inferSelect;
