@@ -149,7 +149,7 @@ export default function Employees() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Cari nama atau NIP..."
+                placeholder="Cari nama atau NIK..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -216,6 +216,7 @@ export default function Employees() {
                           emp.structuralPosition?.includes('direktur') ? 'bg-red-600 hover:bg-red-700 border-transparent text-white' :
                           emp.structuralPosition === 'kabid' ? 'bg-blue-600 hover:bg-blue-700 border-transparent text-white' :
                           emp.structuralPosition === 'kasubbid' ? 'bg-yellow-500 hover:bg-yellow-600 border-transparent text-black' :
+                          emp.structuralPosition === 'kepala_cabang' ? 'bg-green-600 hover:bg-green-700 border-transparent text-white' :
                           'bg-gray-500 hover:bg-gray-600 border-transparent text-white'
                         }`}
                       >
@@ -380,7 +381,7 @@ function AddEmployeeForm({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label className="text-sm font-medium mb-1.5 block">NIP</label>
+          <label className="text-sm font-medium mb-1.5 block">NIK</label>
           <Input value={form.nip} onChange={e => setForm({...form, nip: e.target.value})} required className={inputClass} data-testid="input-nip" />
         </div>
         <div>
@@ -411,7 +412,7 @@ function AddEmployeeForm({
           <Select value={form.grade} onValueChange={v => setForm({...form, grade: v})}>
             <SelectTrigger data-testid="select-grade"><SelectValue placeholder="Pilih Golongan" /></SelectTrigger>
             <SelectContent>
-              {["A/I", "B/I", "C/I", "D/I", "A/II", "B/II", "C/II", "D/II", "A/III", "B/III", "C/III", "D/III", "A/IV", "B/IV", "C/IV", "D/IV", "E/IV"].map(g => (
+              {["A/I", "A/II", "A/III", "A/IV", "B/I", "B/II", "B/III", "B/IV", "C/I", "C/II", "C/III", "C/IV", "D/I", "D/II", "D/III", "D/IV", "E/IV"].map(g => (
                 <SelectItem key={g} value={g}>Gol. {g}</SelectItem>
               ))}
             </SelectContent>

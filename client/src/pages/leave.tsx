@@ -44,6 +44,7 @@ export default function LeavePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       toast({ title: "Status diperbarui" });
     },
   });

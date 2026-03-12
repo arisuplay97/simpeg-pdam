@@ -34,10 +34,10 @@ const STATUS_VARIANTS: Record<string, "default" | "secondary" | "destructive" | 
 };
 
 const GRADE_OPTIONS = [
-  "A/I", "B/I", "C/I", "D/I",
-  "A/II", "B/II", "C/II", "D/II",
-  "A/III", "B/III", "C/III", "D/III",
-  "A/IV", "B/IV", "C/IV", "D/IV", "E/IV"
+  "A/I", "A/II", "A/III", "A/IV",
+  "B/I", "B/II", "B/III", "B/IV",
+  "C/I", "C/II", "C/III", "C/IV",
+  "D/I", "D/II", "D/III", "D/IV", "E/IV"
 ];
 
 const STATUS_FLOW = [

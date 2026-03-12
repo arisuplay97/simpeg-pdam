@@ -129,12 +129,13 @@ export default function EmployeeDetail() {
             <h1 className="text-2xl font-bold tracking-tight" data-testid="text-employee-name">{employee.fullName}</h1>
             <div className="flex items-center gap-2 mt-1">
               <span className="text-sm text-muted-foreground">{employee.nip} · {currentDeptStr}</span>
-              <Badge 
+              <Badge
                 className={`text-[10px] ${
-                  employee.structuralPosition?.includes('direktur') ? 'bg-red-600 hover:bg-red-700' :
-                  employee.structuralPosition === 'kabid' ? 'bg-blue-600 hover:bg-blue-700' :
-                  employee.structuralPosition === 'kasubbid' ? 'bg-yellow-500 hover:bg-yellow-600 text-black' :
-                  'bg-gray-500 hover:bg-gray-600'
+                  employee.structuralPosition?.includes('direktur') ? 'bg-red-600 hover:bg-red-700 text-white border-transparent' :
+                  employee.structuralPosition === 'kabid' ? 'bg-blue-600 hover:bg-blue-700 text-white border-transparent' :
+                  employee.structuralPosition === 'kasubbid' ? 'bg-yellow-500 hover:bg-yellow-600 text-black border-transparent' :
+                  employee.structuralPosition === 'kepala_cabang' ? 'bg-green-600 hover:bg-green-700 text-white border-transparent' :
+                  'bg-gray-500 hover:bg-gray-600 text-white border-transparent'
                 }`}
               >
                 {employee.structuralPosition?.replace(/_/g, ' ').toUpperCase()}
@@ -526,6 +527,7 @@ function EditEmployeeDialog({ employee, departments, branches, subDepartments, o
     employeeType: employee.employeeType,
     grade: employee.grade || "",
     joinDate: employee.joinDate || "",
+    nip: employee.nip, // Added NIP
     npwp: employee.npwp || "",
     bpjs: employee.bpjs || "",
     bankAccount: employee.bankAccount || "",
@@ -566,6 +568,25 @@ function EditEmployeeDialog({ employee, departments, branches, subDepartments, o
       major: form.major || null,
     });
   };
+
+  const gradeOptions = [
+    "A/I", "A/II", "A/III", "A/IV",
+    "B/I", "B/II", "B/III", "B/IV",
+    "C/I", "C/II", "C/III", "C/IV",
+    "D/I", "D/II", "D/III", "D/IV",
+    "E/IV"
+  ].sort((a, b) => {
+    const getLetter = (s: string) => s.split('/')[0];
+    const getNumber = (s: string) => parseInt(s.split('/')[1]);
+
+    const letterA = getLetter(a);
+    const letterB = getLetter(b);
+
+    if (letterA < letterB) return -1;
+    if (letterA > letterB) return 1;
+
+    return getNumber(a) - getNumber(b);
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -719,11 +740,15 @@ function EditEmployeeDialog({ employee, departments, branches, subDepartments, o
               <Select value={form.grade} onValueChange={v => setForm({...form, grade: v})}>
                 <SelectTrigger data-testid="edit-select-grade"><SelectValue placeholder="Pilih Golongan" /></SelectTrigger>
                 <SelectContent>
-                  {["A/I", "B/I", "C/I", "D/I", "A/II", "B/II", "C/II", "D/II", "A/III", "B/III", "C/III", "D/III", "A/IV", "B/IV", "C/IV", "D/IV", "E/IV"].map(g => (
+                  {gradeOptions.map(g => (
                     <SelectItem key={g} value={g}>Gol. {g}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">NIK</label>
+              <Input value={form.nip} onChange={e => setForm({...form, nip: e.target.value})} required />
             </div>
             <div>
               <label className="text-sm font-medium mb-1.5 block">Status</label>
