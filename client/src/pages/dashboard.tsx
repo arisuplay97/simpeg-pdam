@@ -78,7 +78,7 @@ export default function Dashboard() {
   const pendingSalaryIncreases = salaryIncreases.filter(si => !["approved", "rejected"].includes(si.status));
   const awaitingDirApproval = rankPromotions.filter(rp => rp.status === "approval_direktur");
 
-  const RETIREMENT_AGE = 58;
+  const RETIREMENT_AGE = 56;
   const getEndInfo = (emp: typeof employees[0]) => {
     if (emp.employeeType === "kontrak") {
       if (!emp.contractEndDate) return null;

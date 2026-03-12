@@ -84,8 +84,11 @@ export default function PayslipModal({ payrollItem, employee, deductions, positi
   const joinDate = employee?.joinDate ? new Date(employee.joinDate) : null;
   const yearsWorked = joinDate ? Math.floor((Date.now() - joinDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : 0;
 
-  const buildPdf = (jsPDFConstructor: any) => {
-    const doc = new jsPDFConstructor({ orientation: "portrait", unit: "mm", format: [130, 200] });
+  const bpjsTotal = Number(payrollItem.bpjsKesehatanDeduction || 0) + Number(payrollItem.bpjsKetenagakerjaanDeduction || 0);
+  const pph21Value = Number(payrollItem.pph21Deduction || 0);
+
+  const buildPdf = (jsPDF: any) => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: [130, 200] });
     const w = doc.internal.pageSize.getWidth();
     const h = doc.internal.pageSize.getHeight();
 
@@ -175,6 +178,20 @@ export default function PayslipModal({ payrollItem, employee, deductions, positi
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(6.5);
+    
+    // Default deductions
+    const bpjsTotal = Number(payrollItem.bpjsKesehatanDeduction || 0) + Number(payrollItem.bpjsKetenagakerjaanDeduction || 0);
+    const pph21Value = Number(payrollItem.pph21Deduction || 0);
+
+    if (payrollItem.type !== "THR") {
+      doc.text("- BPJS Kesehatan & Ketenagakerjaan", 10, y);
+      doc.text(bpjsTotal > 0 ? formatRp(bpjsTotal) : "-", w - 10, y, { align: "right" });
+      y += 3.5;
+      doc.text("- PPh 21", 10, y);
+      doc.text(pph21Value > 0 ? formatRp(pph21Value) : "-", w - 10, y, { align: "right" });
+      y += 3.5;
+    }
+
     deductions.forEach(d => {
       doc.text(d.label, 10, y);
       doc.text(formatRp(d.amount), w - 10, y, { align: "right" });
@@ -320,7 +337,19 @@ export default function PayslipModal({ payrollItem, employee, deductions, positi
                 <div style={{ background: "#fef2f2", padding: "5px 10px", fontWeight: 700, fontSize: 10, color: "#ef4444", borderRadius: 4, marginBottom: 6 }}>POTONGAN</div>
                 <table style={{ width: "100%", fontSize: 10, marginBottom: 8 }}>
                   <tbody>
-                    {deductions.map(d => (
+                    {payrollItem.type !== "THR" && (
+                    <>
+                      <div className="flex justify-between items-center py-2 border-b border-border/50 px-2 group hover:bg-muted/30 transition-colors">
+                        <span className="text-muted-foreground group-hover:text-foreground transition-colors">- BPJS Kesehatan & Ketenagakerjaan</span>
+                        <span className={`font-medium ${bpjsTotal > 0 ? 'text-red-500 font-mono' : ''}`}>{bpjsTotal > 0 ? formatRp(bpjsTotal) : "-"}</span>
+                      </div>
+                      <div className="flex justify-between items-center py-2 border-b border-border/50 px-2 group hover:bg-muted/30 transition-colors">
+                        <span className="text-muted-foreground group-hover:text-foreground transition-colors">- PPh 21</span>
+                        <span className={`font-medium ${pph21Value > 0 ? 'text-red-500 font-mono' : ''}`}>{pph21Value > 0 ? formatRp(pph21Value) : "-"}</span>
+                      </div>
+                    </>
+                  )}
+                  {deductions.map(d => (
                       <tr key={d.id}>
                         <td style={{ padding: "2px 0", color: "#444" }}>{d.label}</td>
                         <td style={{ textAlign: "right", fontFamily: "monospace", color: "#ef4444", padding: "2px 0" }}>{formatRp(d.amount)}</td>

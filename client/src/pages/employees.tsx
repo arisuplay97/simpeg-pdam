@@ -209,9 +209,19 @@ export default function Employees() {
                         {emp.employeeType}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5" title={emp.structuralPosition?.replace('_', ' ').toUpperCase()}>
-                      {emp.nip} · {getLocationName(emp)} · {emp.structuralPosition?.replace('_', ' ').toUpperCase()}
-                    </p>
+                    <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5" title={emp.structuralPosition?.replace(/_/g, ' ').toUpperCase()}>
+                      <span>{emp.nip} · {getLocationName(emp)}</span>
+                      <Badge 
+                        className={`text-[9px] h-4 px-1.5 ${
+                          emp.structuralPosition?.includes('direktur') ? 'bg-red-600 hover:bg-red-700 border-transparent text-white' :
+                          emp.structuralPosition === 'kabid' ? 'bg-blue-600 hover:bg-blue-700 border-transparent text-white' :
+                          emp.structuralPosition === 'kasubbid' ? 'bg-yellow-500 hover:bg-yellow-600 border-transparent text-black' :
+                          'bg-gray-500 hover:bg-gray-600 border-transparent text-white'
+                        }`}
+                      >
+                        {emp.structuralPosition?.replace(/_/g, ' ').toUpperCase()}
+                      </Badge>
+                    </div>
                   </div>
                   <div className="hidden md:flex items-center gap-4 text-xs text-muted-foreground">
                     {emp.email && <span className="flex items-center gap-1"><Mail className="w-3.5 h-3.5" />{emp.email}</span>}
@@ -269,7 +279,7 @@ function AddEmployeeForm({
   });
 
   const isPusat = form.officeType === "pusat";
-  const disableSubDept = (isPusat && ["direktur", "kabid"].includes(form.structuralPosition)) || (!isPusat && form.structuralPosition === "kepala_cabang");
+  const disableSubDept = (isPusat && ["direktur_utama", "direktur_umum", "direktur_operasional", "kabid"].includes(form.structuralPosition)) || (!isPusat && form.structuralPosition === "kepala_cabang");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -306,14 +316,16 @@ function AddEmployeeForm({
           <div>
             <label className="text-sm font-medium mb-1.5 block">Jabatan Struktural</label>
             <Select value={form.structuralPosition} onValueChange={v => setForm({...form, structuralPosition: v, subDepartmentId: ""})}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger data-testid="select-position"><SelectValue placeholder="Pilih Jabatan" /></SelectTrigger>
               <SelectContent>
                 {isPusat ? (
                   <>
-                    <SelectItem value="direktur">Direktur</SelectItem>
+                    <SelectItem value="direktur_utama">Direktur Utama</SelectItem>
+                    <SelectItem value="direktur_umum">Direktur Umum</SelectItem>
+                    <SelectItem value="direktur_operasional">Direktur Operasional</SelectItem>
                     <SelectItem value="kabid">Kepala Bidang (Kabid)</SelectItem>
                     <SelectItem value="kasubbid">Kepala Sub-Bidang (Kasubbid)</SelectItem>
-                    <SelectItem value="staff">Staff Pusat</SelectItem>
+                    <SelectItem value="staff">Staff</SelectItem>
                   </>
                 ) : (
                   <>
@@ -328,8 +340,8 @@ function AddEmployeeForm({
 
           {isPusat ? (
             <div>
-              <label className="text-sm font-medium mb-1.5 block">Bidang {form.structuralPosition !== 'direktur' && <span className="text-red-500">*</span>}</label>
-              <Select value={form.departmentId} onValueChange={v => setForm({...form, departmentId: v})} disabled={form.structuralPosition === 'direktur'} required={form.structuralPosition !== 'direktur'}>
+              <label className="text-sm font-medium mb-1.5 block">Bidang {!form.structuralPosition.includes('direktur') && <span className="text-red-500">*</span>}</label>
+              <Select value={form.departmentId} onValueChange={v => setForm({...form, departmentId: v})} disabled={form.structuralPosition.includes('direktur')} required={form.structuralPosition !== 'direktur'}>
                 <SelectTrigger><SelectValue placeholder="Pilih Bidang" /></SelectTrigger>
                 <SelectContent>
                   {departments.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}

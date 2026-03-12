@@ -31,7 +31,7 @@ function buildOrgTree(employees: Employee[], rootStructuralPositions: string[], 
 
     let directReports: Employee[] = [];
 
-    if (manager.structuralPosition === 'direktur') {
+    if (manager.structuralPosition?.includes('direktur')) {
       directReports = employees.filter(e => e.structuralPosition === 'kabid');
     } else if (manager.structuralPosition === 'kabid') {
       directReports = employees.filter(e => e.structuralPosition === 'kasubbid' && e.departmentId === manager.departmentId);
@@ -69,13 +69,13 @@ function OrgTreeNode({ node, departments, branches, subDepartments, defaultExpan
   const hasChildren = node.children.length > 0;
 
   const bgColor = 
-    emp.structuralPosition === 'direktur' ? 'bg-indigo-600 border-indigo-700 text-white' :
+    emp.structuralPosition?.includes('direktur') ? 'bg-red-600 border-red-700 text-white' :
     emp.structuralPosition === 'kepala_cabang' ? 'bg-emerald-600 border-emerald-700 text-white' :
     emp.structuralPosition === 'kabid' ? 'bg-blue-600 border-blue-700 text-white' :
-    emp.structuralPosition === 'kasubbid' ? 'bg-amber-500 border-amber-600 text-white' :
-    'bg-card border-border text-card-foreground';
+    emp.structuralPosition === 'kasubbid' ? 'bg-yellow-500 border-yellow-600 text-black' :
+    'bg-gray-500 border-gray-600 text-white';
 
-  const textColor = ['direktur', 'kabid', 'kepala_cabang', 'kasubbid'].includes(emp.structuralPosition || '') ? 'text-white/80' : 'text-muted-foreground';
+  const textColor = emp.structuralPosition === 'kasubbid' ? 'text-black/80' : 'text-white/90';
 
   return (
     <div className="flex flex-col items-center">
@@ -145,7 +145,7 @@ export default function OrganizationPage() {
 
   const orgTree = useMemo(() => {
     if (viewMode === "pusat") {
-      return buildOrgTree(employees, ['direktur']);
+      return buildOrgTree(employees, ['direktur_utama', 'direktur_umum', 'direktur_operasional']);
     } else {
       const branchId = selectedBranch === "all" ? null : parseInt(selectedBranch);
       return buildOrgTree(employees, ['kepala_cabang'], branchId);

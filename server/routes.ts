@@ -536,7 +536,7 @@ export async function registerRoutes(
     try {
       const allEmployees = await storage.getEmployees();
       const existingNotifs = await storage.getNotifications();
-      const RETIREMENT_AGE = 58;
+      const RETIREMENT_AGE = 56;
       const now = new Date();
       const today = now.toISOString().slice(0, 10);
       const createdNotifs: string[] = [];

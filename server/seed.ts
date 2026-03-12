@@ -83,7 +83,7 @@ export async function seedDatabase() {
   // 5. Insert Employees
   const empData = await db.insert(employees).values([
     // DIREKTUR (Pusat) - index 0
-    { nip: "PDAM-DIR", fullName: "H. Doni Alga, S.E., M.M.", gender: "Laki-laki", officeType: "pusat", structuralPosition: "direktur", departmentId: null, subDepartmentId: null, branchId: null, positionId: posData[0].id, joinDate: "1995-01-01", status: "aktif", employeeType: "tetap", email: "doni@pdam-rinjani.id", birthPlace: "Mataram" },
+    { nip: "PDAM-DIR", fullName: "H. Doni Alga, S.E., M.M.", gender: "Laki-laki", officeType: "pusat", structuralPosition: "direktur_utama", departmentId: null, subDepartmentId: null, branchId: null, positionId: posData[0].id, joinDate: "1995-01-01", status: "aktif", employeeType: "tetap", email: "doni@pdam-rinjani.id", birthPlace: "Mataram" },
     
     // KABID (Pusat - Keuangan) - index 1
     { nip: "PDAM-KBD", fullName: "Dra. Siti Rahayu", gender: "Perempuan", officeType: "pusat", structuralPosition: "kabid", departmentId: deptData[1].id, subDepartmentId: null, branchId: null, positionId: posData[1].id, joinDate: "2000-01-01", status: "aktif", employeeType: "tetap", email: "siti@pdam-rinjani.id", birthPlace: "Praya" },

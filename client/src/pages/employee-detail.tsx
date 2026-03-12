@@ -127,7 +127,19 @@ export default function EmployeeDetail() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold tracking-tight" data-testid="text-employee-name">{employee.fullName}</h1>
-            <p className="text-sm text-muted-foreground" title={employee.structuralPosition?.replace('_', ' ').toUpperCase()}>{employee.nip} · {currentDeptStr} · {employee.structuralPosition?.replace('_', ' ').toUpperCase()}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-sm text-muted-foreground">{employee.nip} · {currentDeptStr}</span>
+              <Badge 
+                className={`text-[10px] ${
+                  employee.structuralPosition?.includes('direktur') ? 'bg-red-600 hover:bg-red-700' :
+                  employee.structuralPosition === 'kabid' ? 'bg-blue-600 hover:bg-blue-700' :
+                  employee.structuralPosition === 'kasubbid' ? 'bg-yellow-500 hover:bg-yellow-600 text-black' :
+                  'bg-gray-500 hover:bg-gray-600'
+                }`}
+              >
+                {employee.structuralPosition?.replace(/_/g, ' ').toUpperCase()}
+              </Badge>
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -540,7 +552,7 @@ function EditEmployeeDialog({ employee, departments, branches, subDepartments, o
   });
 
   const isPusat = form.officeType === "pusat";
-  const disableSubDept = (isPusat && ["direktur", "kabid"].includes(form.structuralPosition)) || (!isPusat && form.structuralPosition === "kepala_cabang");
+  const disableSubDept = (isPusat && ["direktur_utama", "direktur_umum", "direktur_operasional", "kabid"].includes(form.structuralPosition)) || (!isPusat && form.structuralPosition === "kepala_cabang");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -578,14 +590,16 @@ function EditEmployeeDialog({ employee, departments, branches, subDepartments, o
               <div>
                 <label className="text-sm font-medium mb-1.5 block">Jabatan Struktural</label>
                 <Select value={form.structuralPosition} onValueChange={v => setForm({...form, structuralPosition: v, subDepartmentId: ""})}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger data-testid="edit-select-position"><SelectValue placeholder="Pilih Jabatan" /></SelectTrigger>
                   <SelectContent>
                     {isPusat ? (
                       <>
-                        <SelectItem value="direktur">Direktur</SelectItem>
+                        <SelectItem value="direktur_utama">Direktur Utama</SelectItem>
+                        <SelectItem value="direktur_umum">Direktur Umum</SelectItem>
+                        <SelectItem value="direktur_operasional">Direktur Operasional</SelectItem>
                         <SelectItem value="kabid">Kepala Bidang (Kabid)</SelectItem>
                         <SelectItem value="kasubbid">Kepala Sub-Bidang (Kasubbid)</SelectItem>
-                        <SelectItem value="staff">Staff Pusat</SelectItem>
+                        <SelectItem value="staff">Staff</SelectItem>
                       </>
                     ) : (
                       <>
@@ -600,8 +614,8 @@ function EditEmployeeDialog({ employee, departments, branches, subDepartments, o
 
               {isPusat ? (
                 <div>
-                  <label className="text-sm font-medium mb-1.5 block">Bidang {form.structuralPosition !== 'direktur' && <span className="text-red-500">*</span>}</label>
-                  <Select value={form.departmentId} onValueChange={v => setForm({...form, departmentId: v})} disabled={form.structuralPosition === 'direktur'} required={form.structuralPosition !== 'direktur'}>
+                  <label className="text-sm font-medium mb-1.5 block">Bidang {!form.structuralPosition.includes('direktur') && <span className="text-red-500">*</span>}</label>
+                  <Select value={form.departmentId} onValueChange={v => setForm({...form, departmentId: v})} disabled={form.structuralPosition.includes('direktur')} required={!form.structuralPosition.includes('direktur')}>
                     <SelectTrigger><SelectValue placeholder="Pilih Bidang" /></SelectTrigger>
                     <SelectContent>
                       {departments.map(d => <SelectItem key={d.id} value={String(d.id)}>{d.name}</SelectItem>)}
@@ -1041,7 +1055,7 @@ function ContractCard({ contractEndDate, joinDate }: { contractEndDate?: string 
 }
 
 function RetirementCard({ birthDate, joinDate }: { birthDate: string; joinDate?: string | null }) {
-  const RETIREMENT_AGE = 58;
+  const RETIREMENT_AGE = 56;
   const birth = new Date(birthDate);
   const retirementDate = new Date(birth.getFullYear() + RETIREMENT_AGE, birth.getMonth(), birth.getDate());
   const now = new Date();
