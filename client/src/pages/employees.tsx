@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Search, Plus, Users, UserCheck, UserCog, Filter, ChevronRight, Mail, Phone, Trash2 } from "lucide-react";
+import { Search, Plus, Users, UserCheck, UserCog, Filter, ChevronRight, Mail, Phone, Trash2, FileText, Timer, Building2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 export default function Employees() {
