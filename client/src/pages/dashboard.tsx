@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { Employee, Notification, Attendance, LeaveRequest, RankPromotion, SalaryIncrease } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,8 @@ import { useAuth } from "@/lib/auth";
 import { Link } from "wouter";
 import {
   Users, UserCheck, UserCog, Clock, AlertTriangle, FileText,
-  Calendar, DollarSign, TrendingUp, Bell, Activity, Shield, ArrowRight, Timer
+  Calendar, DollarSign, TrendingUp, Bell, Activity, Shield, ArrowRight, Timer,
+  Search, Filter, GraduationCap, Building2
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
@@ -20,15 +22,15 @@ function StatCard({ title, value, icon: Icon, color, subtitle }: {
   title: string; value: string | number; icon: any; color: string; subtitle?: string;
 }) {
   return (
-    <Card className="relative overflow-hidden" data-testid={`stat-${title.toLowerCase().replace(/\s/g, '-')}`}>
+    <Card className="relative overflow-hidden glass-panel border-0 ring-1 ring-border/50 hover:ring-border transition-all duration-300 hover:shadow-md" data-testid={`stat-${title.toLowerCase().replace(/\s/g, '-')}`}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">{title}</p>
-            <p className="text-2xl font-bold tracking-tight">{value}</p>
-            {subtitle && <p className="text-xs text-muted-foreground">{subtitle}</p>}
+          <div className="space-y-1.5 min-w-0 pr-4">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider truncate">{title}</p>
+            <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
+            {subtitle && <p className="text-[11px] text-muted-foreground/80 truncate">{subtitle}</p>}
           </div>
-          <div className={`p-2.5 rounded-xl ${color}`}>
+          <div className={`p-3 rounded-2xl ${color} shadow-sm shrink-0`}>
             <Icon className="w-5 h-5 text-white" />
           </div>
         </div>
@@ -142,354 +144,278 @@ export default function Dashboard() {
     { name: "Mar", gaji: 125, operasional: 47 },
   ];
 
+  const [activeTab, setActiveTab] = useState("Semua");
+
   if (statsLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Skeleton className="h-4 w-80" />
+      <div className="flex flex-col xl:flex-row gap-6 h-full">
+        <div className="flex-1 space-y-6">
+          <div>
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+          </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-28 rounded-xl" />)}
+        <div className="hidden xl:block w-[380px]">
+          <Skeleton className="h-[600px] rounded-2xl" />
         </div>
       </div>
     );
   }
 
+  const approvalItems = [
+    ...pendingLeave.map(lr => ({
+      id: `leave-${lr.id}`,
+      type: 'Cuti / Izin',
+      name: employees.find(e => e.id === lr.employeeId)?.fullName || '—',
+      date: new Date(lr.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+      unit: employees.find(e => e.id === lr.employeeId)?.structuralPosition || '—',
+      status: 'PENDING',
+      link: '/leave'
+    })),
+    ...awaitingDirApproval.map(rp => ({
+      id: `promo-${rp.id}`,
+      type: 'Kenaikan Pangkat',
+      name: employees.find(e => e.id === rp.employeeId)?.fullName || '—',
+      date: rp.createdAt ? new Date(rp.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—',
+      unit: employees.find(e => e.id === rp.employeeId)?.structuralPosition || '—',
+      status: 'PENDING',
+      link: '/rank-promotions'
+    })),
+    ...pendingSalaryIncreases.map(si => ({
+      id: `salary-${si.id}`,
+      type: 'Kenaikan Gaji',
+      name: employees.find(e => e.id === si.employeeId)?.fullName || '—',
+      date: si.createdAt ? new Date(si.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '—',
+      unit: employees.find(e => e.id === si.employeeId)?.structuralPosition || '—',
+      status: 'PENDING',
+      link: '/salary-increases'
+    }))
+  ];
+
+  const filteredApprovals = approvalItems.filter(item => {
+    if (activeTab === "Semua") return true;
+    if (activeTab === "Cuti/Izin" && item.type === "Cuti / Izin") return true;
+    if (activeTab === "Mutasi" && item.type === "Kenaikan Pangkat") return true;
+    if (activeTab === "Gaji" && item.type === "Kenaikan Gaji") return true;
+    return false;
+  });
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight" data-testid="text-page-title">Dashboard</h1>
-        <p className="text-sm text-muted-foreground mt-1">Ringkasan informasi PDAM Tirta Ardhia Rinjani</p>
-      </div>
+    <div className="flex flex-col xl:flex-row gap-6">
+      {/* Left Main Area */}
+      <div className="flex-1 space-y-6 min-w-0 pb-10">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground" data-testid="text-page-title">Dashboard</h1>
+          <p className="text-sm text-muted-foreground mt-1">Ringkasan informasi operasional SDM PDAM Tirta Ardhia Rinjani</p>
+        </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Total Pegawai" value={stats?.totalEmployees || 0} icon={Users} color="bg-sky-600" subtitle="Seluruh pegawai" />
-        <StatCard title="Pegawai Aktif" value={stats?.activeEmployees || 0} icon={UserCheck} color="bg-emerald-600" subtitle="Status aktif" />
-        <StatCard title="Pegawai Kontrak" value={stats?.contractEmployees || 0} icon={UserCog} color="bg-amber-500" subtitle="Kontrak berjalan" />
-        <StatCard title="Hadir Hari Ini" value={stats?.todayAttendance || 0} icon={Clock} color="bg-cyan-600" subtitle="Sudah check-in" />
-        <StatCard title="Terlambat" value={stats?.lateToday || 0} icon={AlertTriangle} color="bg-orange-500" subtitle="Hari ini" />
-        <StatCard title="Cuti Aktif" value={stats?.activeLeave || 0} icon={Calendar} color="bg-purple-500" subtitle="Sedang cuti" />
-        <StatCard title="Menunggu Approval" value={stats?.pendingLeave || 0} icon={FileText} color="bg-rose-500" subtitle="Pengajuan cuti" />
-        <StatCard title="Kenaikan Pangkat" value={pendingPromotions.length} icon={Shield} color="bg-indigo-600" subtitle="Menunggu proses" />
-      </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <StatCard title="Total Pegawai" value={stats?.totalEmployees || 0} icon={Users} color="bg-gradient-to-br from-blue-600 to-blue-500" subtitle="Seluruh pegawai terdaftar" />
+          <StatCard title="Formasi Terisi" value={stats?.activeEmployees || 0} icon={UserCheck} color="bg-gradient-to-br from-emerald-600 to-emerald-500" subtitle="Pegawai berstatus aktif" />
+          <StatCard title="Mendekati Pensiun" value={endingIn1Year.length} icon={Timer} color="bg-gradient-to-br from-orange-500 to-orange-400" subtitle="Dalam 1 tahun ke depan" />
+          
+          <StatCard title="Payroll Bulan Ini" value={`Rp 2.4M`} icon={DollarSign} color="bg-gradient-to-br from-indigo-600 to-indigo-500" subtitle="Estimasi total" />
+          <StatCard title="Rerata Kinerja" value={`8.4 / 10`} icon={Activity} color="bg-gradient-to-br from-cyan-600 to-cyan-500" subtitle="Bulan lalu" />
+          <StatCard title="Approval Pending" value={approvalItems.length} icon={AlertTriangle} color="bg-gradient-to-br from-rose-600 to-rose-500" subtitle="Membutuhkan tindakan" />
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary" />
-              Kehadiran 7 Hari Terakhir
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={attendanceByDay} barGap={2}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="hadir" fill="#0284c7" name="Hadir" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="izin" fill="#f59e0b" name="Izin" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="sakit" fill="#f97316" name="Sakit" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="alpha" fill="#ef4444" name="Alpha" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="glass-panel border-0 ring-1 ring-border/50 shadow-sm rounded-[1.25rem]">
+            <CardHeader className="pb-2 border-b border-border/50">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Users className="w-4 h-4 text-blue-500" />
+                Sebaran Pegawai
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 pb-2">
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie data={deptDistribution} cx="50%" cy="50%" outerRadius={85} innerRadius={55} dataKey="value" paddingAngle={2}>
+                    {deptDistribution.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Users className="w-4 h-4 text-primary" />
-              Distribusi Pegawai
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={deptDistribution} cx="50%" cy="50%" outerRadius={90} innerRadius={50} dataKey="value" paddingAngle={2}>
-                  {deptDistribution.map((_, i) => (
-                    <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+          <Card className="glass-panel border-0 ring-1 ring-border/50 shadow-sm rounded-[1.25rem]">
+            <CardHeader className="pb-2 border-b border-border/50">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Activity className="w-4 h-4 text-emerald-500" />
+                Kehadiran 7 Hari Terakhir
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 pb-2">
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={attendanceByDay} barGap={2}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill: 'hsl(var(--muted) / 0.4)' }} contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 12, fontSize: 12, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                  <Bar dataKey="hadir" fill="#0ea5e9" name="Hadir" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                  <Bar dataKey="izin" fill="#f59e0b" name="Izin" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                  <Bar dataKey="alpha" fill="#ef4444" name="Alpha" radius={[4, 4, 0, 0]} maxBarSize={30} />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-primary" />
-              Biaya Gaji & Operasional (Juta Rp)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={monthlyExpenses}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis tick={{ fontSize: 12 }} stroke="hsl(var(--muted-foreground))" />
-                <Tooltip contentStyle={{ background: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
-                <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="gaji" stroke="#0284c7" strokeWidth={2} name="Gaji" dot={{ r: 4 }} />
-                <Line type="monotone" dataKey="operasional" stroke="#06b6d4" strokeWidth={2} name="Operasional" dot={{ r: 4 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="glass-panel border-0 ring-1 ring-border/50 shadow-sm rounded-[1.25rem]">
+            <CardHeader className="pb-2 border-b border-border/50">
+              <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-purple-500" />
+                  Notifikasi Teratas
+                </div>
+                <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-200 border-0 dark:bg-purple-900/30 dark:text-purple-300">Terbaru</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="space-y-3">
+                {notifications.slice(0, 4).map((notif) => (
+                  <div key={notif.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-white dark:hover:bg-slate-800 border border-transparent hover:border-slate-200 dark:hover:border-slate-700 transition-colors cursor-pointer group shadow-sm bg-slate-50/50 dark:bg-slate-900/50">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                      notif.type === "warning" ? "bg-amber-100/80 text-amber-600" :
+                      notif.type === "leave" ? "bg-blue-100/80 text-blue-600" :
+                      "bg-sky-100/80 text-sky-600"
+                    }`}>
+                      <Bell className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 pr-2">
+                      <p className="text-sm font-semibold leading-tight text-slate-800 dark:text-slate-200 group-hover:text-blue-600 transition-colors">{notif.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{notif.message}</p>
+                    </div>
+                  </div>
+                ))}
+                {notifications.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-6">Tidak ada notifikasi baru</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Bell className="w-4 h-4 text-primary" />
-              Notifikasi Terbaru
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {notifications.slice(0, 5).map((notif) => (
-                <div key={notif.id} className="flex items-start gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors" data-testid={`notification-${notif.id}`}>
-                  <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${
-                    notif.type === "warning" ? "bg-amber-500" :
-                    notif.type === "leave" ? "bg-blue-500" :
-                    notif.type === "payroll" ? "bg-emerald-500" :
-                    "bg-sky-500"
-                  }`} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium leading-tight">{notif.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{notif.message}</p>
+          <Card className="glass-panel border-0 ring-1 ring-border/50 shadow-sm rounded-[1.25rem]">
+            <CardHeader className="pb-2 border-b border-border/50">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-indigo-500" />
+                Insight SDM
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="space-y-3">
+                <div className="flex items-center gap-4 p-3.5 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100/50 dark:from-orange-950/20 dark:to-orange-900/10 border border-orange-100 dark:border-orange-900/30">
+                  <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center shrink-0 shadow-sm border border-orange-200 dark:border-orange-800">
+                    <AlertTriangle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-orange-800 dark:text-orange-300">Peringkat Kedisiplinan</p>
+                    <p className="text-[11px] font-medium text-orange-600/80 dark:text-orange-400/80">3 pegawai mendekati batas terlambat</p>
                   </div>
                 </div>
-              ))}
-              {notifications.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-8">Tidak ada notifikasi</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                
+                <div className="flex items-center gap-4 p-3.5 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100/50 dark:from-blue-950/20 dark:to-blue-900/10 border border-blue-100 dark:border-blue-900/30">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center shrink-0 shadow-sm border border-blue-200 dark:border-blue-800">
+                    <GraduationCap className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-blue-800 dark:text-blue-300">Pelatihan Aktif</p>
+                    <p className="text-[11px] font-medium text-blue-600/80 dark:text-blue-400/80">14 pegawai sedang dalam masa sertifikasi</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Pengajuan Cuti Terbaru</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {leaveRequests.slice(0, 5).map((lr) => {
-                const emp = employees.find(e => e.id === lr.employeeId);
-                return (
-                  <div key={lr.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50" data-testid={`leave-item-${lr.id}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="text-xs font-semibold text-primary">{emp?.fullName?.charAt(0) || "?"}</span>
+      {/* Right Panel: Approval Center */}
+      {isAdminOrDir && (
+        <div className="w-full xl:w-[360px] shrink-0">
+          <div className="sticky top-20 bg-background/40 backdrop-blur-xl border border-border/50 rounded-[1.5rem] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)]">
+            <h2 className="text-lg font-bold tracking-tight mb-4 flex items-center gap-2">
+              <Shield className="w-5 h-5 text-blue-600" />
+              Approval Center
+            </h2>
+            
+            <div className="flex gap-1.5 overflow-x-auto pb-3 scrollbar-hide -mx-1 px-1">
+              {["Semua", "Cuti/Izin", "Lembur", "Mutasi", "Gaji"].map(t => (
+                <button 
+                  key={t}
+                  onClick={() => setActiveTab(t)}
+                  className={`px-3.5 py-1.5 text-[11px] font-semibold rounded-full whitespace-nowrap transition-all duration-200 ${
+                    activeTab === t 
+                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20 scale-105' 
+                    : 'bg-white dark:bg-slate-800 border text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-slate-100'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative mb-5">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/70" />
+              <input 
+                type="text" 
+                placeholder="Cari pengajuan..." 
+                className="w-full pl-9 pr-9 py-2.5 text-[13px] rounded-xl border bg-slate-50 border-slate-200 dark:bg-slate-900/50 dark:border-slate-800 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all outline-none" 
+              />
+              <Filter className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/70 cursor-pointer hover:text-foreground" />
+            </div>
+
+            <div className="space-y-3 pt-1">
+              {filteredApprovals.length === 0 ? (
+                <div className="p-8 text-center bg-slate-50/50 dark:bg-slate-900/20 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                  <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <CheckCircle2 className="w-6 h-6 text-slate-400" />
+                  </div>
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Tidak ada pengajuan</p>
+                  <p className="text-xs text-slate-400 mt-1">Semua beres untuk "{activeTab}"</p>
+                </div>
+              ) : filteredApprovals.slice(0, 5).map(item => (
+                <div key={item.id} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-amber-400" />
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex gap-3 items-center min-w-0 pr-2">
+                      <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 shrink-0">
+                        {item.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{emp?.fullName || "—"}</p>
-                        <p className="text-xs text-muted-foreground">{lr.type} · {lr.days} hari</p>
+                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-blue-600 transition-colors">{item.name}</p>
+                        <p className="text-[10px] font-medium text-slate-500 truncate">{item.unit.replace(/_/g, ' ').toUpperCase()}</p>
                       </div>
                     </div>
-                    <Badge variant={lr.status === "approved" ? "default" : lr.status === "rejected" ? "destructive" : "secondary"} className="text-[11px] shrink-0">
-                      {lr.status === "approved" ? "Disetujui" : lr.status === "rejected" ? "Ditolak" : "Menunggu"}
-                    </Badge>
                   </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold">Pegawai Terbaru</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {employees.slice(-5).reverse().map((emp) => (
-                <div key={emp.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50" data-testid={`emp-item-${emp.id}`}>
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-xs font-semibold text-primary">{emp.fullName.charAt(0)}</span>
+                  <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-slate-800/60">
+                    <div>
+                      <Badge variant="outline" className="text-[9px] font-bold tracking-wider bg-orange-50/50 text-orange-600 border-orange-200 px-1.5 py-0 uppercase mb-0.5">{item.type}</Badge>
+                      <p className="text-[10px] text-muted-foreground">{item.date}</p>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{emp.fullName}</p>
-                      <p className="text-xs text-muted-foreground">{emp.nip}</p>
-                    </div>
-                  </div>
-                  <Badge variant={emp.status === "aktif" ? "default" : "secondary"} className="text-[11px] shrink-0">
-                    {emp.status}
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {(user?.role === "direktur" || user?.role === "admin" || user?.role === "superadmin") && endingIn1Year.length > 0 && (
-        <Card data-testid="card-retirement-widget">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Clock className="w-4 h-4 text-amber-500" />
-              Pensiun & Kontrak Berakhir
-              <Badge className="bg-amber-500 text-white text-[10px] ml-1">{endingIn1Year.length}</Badge>
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">{endingIn1Year.length} pegawai akan pensiun/kontrak berakhir dalam 1 tahun ke depan</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 mb-3">
-              {endingIn1Year.slice(0, 5).map((emp) => {
-                const isUrgent = emp.remainDays <= 90;
-                const isKontrak = emp.type === "kontrak";
-                return (
-                  <div key={emp.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50" data-testid={`retirement-widget-${emp.id}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isUrgent ? "bg-red-100 dark:bg-red-900/30" : "bg-amber-100 dark:bg-amber-900/30"}`}>
-                        <Clock className={`w-4 h-4 ${isUrgent ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{emp.fullName}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {isKontrak ? "Kontrak berakhir" : "Pensiun"}: {emp.endDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="outline" className={`text-[10px] ${isKontrak ? "border-purple-500/50 text-purple-600 dark:text-purple-400" : "border-amber-500/50 text-amber-600 dark:text-amber-400"}`}>
-                        {isKontrak ? "Kontrak" : "Pensiun"}
-                      </Badge>
-                      <Badge variant={isUrgent ? "destructive" : "secondary"} className={`text-[11px] ${!isUrgent ? "bg-amber-500 hover:bg-amber-600 text-white" : ""}`}>
-                        {emp.remainDays} hari
-                      </Badge>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <Link href="/retirement">
-              <button className="flex items-center gap-1 text-xs text-primary hover:underline" data-testid="link-view-all-retirement">
-                Lihat semua daftar <ArrowRight className="w-3 h-3" />
-              </button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
-
-      {isAdminOrDir && alerts && (alerts.promote.length > 0 || alerts.salary.length > 0) && (
-        <Card data-testid="card-hr-alerts">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Shield className="w-4 h-4 text-indigo-500" />
-              Kepegawaian Alerts
-              <Badge className="bg-indigo-500 text-white text-[10px] ml-1">{alerts.promote.length + alerts.salary.length}</Badge>
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">Daftar pegawai yang memenuhi syarat kenaikan pangkat/golongan atau kenaikan gaji berkala</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 mb-3">
-              {alerts.promote.slice(0, 5).map((emp: Employee) => (
-                <div key={`prom-${emp.id}`} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                      <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{emp.fullName}</p>
-                      <p className="text-xs text-muted-foreground">Status Pangkat Terakhir: {emp.lastPromotionDate ? new Date(emp.lastPromotionDate).toLocaleDateString('id-ID') : 'Dari Awal Masuk (' + (emp.joinDate ? new Date(emp.joinDate).toLocaleDateString('id-ID') : '-') + ')'}</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] border-indigo-500/50 text-indigo-600 dark:text-indigo-400">
-                    Syarat Pangkat
-                  </Badge>
-                </div>
-              ))}
-              {alerts.salary.slice(0, 5).map((emp: Employee) => (
-                <div key={`sal-${emp.id}`} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                      <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{emp.fullName}</p>
-                      <p className="text-xs text-muted-foreground">Kenaikan Gaji Terakhir: {emp.lastSalaryIncreaseDate ? new Date(emp.lastSalaryIncreaseDate).toLocaleDateString('id-ID') : 'Dari Awal Masuk (' + (emp.joinDate ? new Date(emp.joinDate).toLocaleDateString('id-ID') : '-') + ')'}</p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="text-[10px] border-emerald-500/50 text-emerald-600 dark:text-emerald-400">
-                    Syarat KG Berkala
-                  </Badge>
-                </div>
-              ))}
-            </div>
-            <Link href="/employees">
-              <button className="flex items-center gap-1 text-xs text-primary hover:underline">
-                Kelola data pegawai <ArrowRight className="w-3 h-3" />
-              </button>
-            </Link>
-          </CardContent>
-        </Card>
-      )}
-
-      {isAdminOrDir && (awaitingDirApproval.length > 0 || pendingSalaryIncreases.length > 0) && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
-              <Shield className="w-4 h-4 text-primary" />
-              Menunggu Approval
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {awaitingDirApproval.map((rp) => {
-                const emp = employees.find(e => e.id === rp.employeeId);
-                return (
-                  <div key={`rp-${rp.id}`} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50" data-testid={`approval-rp-${rp.id}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-                        <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{emp?.fullName || "—"}</p>
-                        <p className="text-xs text-muted-foreground">Kenaikan Pangkat: {rp.fromGrade} → {rp.toGrade}</p>
-                      </div>
-                    </div>
-                    <Link href="/rank-promotions">
-                      <button className="flex items-center gap-1 text-xs text-primary hover:underline" data-testid={`link-approve-rp-${rp.id}`}>
-                        Proses <ArrowRight className="w-3 h-3" />
+                    <Link href={item.link}>
+                      <button className="px-3.5 py-1.5 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white dark:bg-blue-900/30 dark:hover:bg-blue-600 dark:text-blue-400 dark:hover:text-white rounded-lg text-xs font-bold transition-all duration-200 active:scale-95 shadow-sm">
+                        Review
                       </button>
                     </Link>
                   </div>
-                );
-              })}
-              {pendingSalaryIncreases.map((si) => {
-                const emp = employees.find(e => e.id === si.employeeId);
-                return (
-                  <div key={`si-${si.id}`} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50" data-testid={`approval-si-${si.id}`}>
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                        <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{emp?.fullName || "—"}</p>
-                        <p className="text-xs text-muted-foreground">Kenaikan Gaji: Rp {Number(si.fromSalary).toLocaleString('id-ID')} → Rp {Number(si.toSalary).toLocaleString('id-ID')}</p>
-                      </div>
-                    </div>
-                    <Link href="/salary-increases">
-                      <button className="flex items-center gap-1 text-xs text-primary hover:underline" data-testid={`link-approve-si-${si.id}`}>
-                        Proses <ArrowRight className="w-3 h-3" />
-                      </button>
-                    </Link>
-                  </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+            
+            {filteredApprovals.length > 5 && (
+              <button className="w-full mt-4 py-2.5 text-xs font-bold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 bg-white dark:bg-slate-900 rounded-xl border border-blue-100 dark:border-blue-900/50 shadow-[0_2px_10px_-3px_rgba(59,130,246,0.1)] hover:shadow-[0_4px_12px_-2px_rgba(59,130,246,0.15)] transition-all active:scale-[0.98]">
+                Lihat Semua ({filteredApprovals.length})
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

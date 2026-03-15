@@ -8,7 +8,8 @@ import {
   LayoutDashboard, Users, CalendarCheck, FileText, DollarSign,
   BarChart3, ArrowLeftRight, GraduationCap, FolderOpen,
   Bell, ChevronLeft, ChevronRight, Sun, Moon, Search, Menu, X,
-  ClipboardList, LogOut, Shield, TrendingUp, Clock, Database, Network
+  ClipboardList, LogOut, Shield, TrendingUp, Clock, Database, Network,
+  Settings
 } from "lucide-react";
 import logoPath from "@assets/Logo_Tirta_1773201248263.png";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -128,7 +129,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                       w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
                       transition-all duration-150 relative
                       ${isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
+                        ? "bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-md shadow-blue-500/20"
                         : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                       }
                       ${collapsed ? "justify-center px-0" : ""}
@@ -173,7 +174,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
-            <div className="hidden sm:flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-2 w-64 border border-border/50">
+            <div className="hidden sm:flex items-center gap-2 bg-muted/30 rounded-xl px-4 py-2.5 w-96 max-w-lg border border-border/50 focus-within:bg-background focus-within:ring-1 focus-within:ring-primary transition-all shadow-[0_2px_10px_-3px_rgba(0,0,0,0.05)]">
               <Search className="w-4 h-4 text-muted-foreground" />
               <input
                 type="text"
@@ -201,25 +202,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 </span>
               )}
             </button>
+            <button className="p-2 rounded-lg hover:bg-muted transition-colors relative" data-testid="btn-settings">
+              <Settings className="w-[18px] h-[18px]" />
+            </button>
 
-            <div className="flex items-center gap-2 ml-1 pl-2 border-l border-border">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <span className="text-xs font-semibold text-primary">{initials}</span>
+            <div className="flex items-center gap-3 ml-2 pl-4 border-l border-border h-8">
+              <div className="text-right hidden sm:block">
+                <p className="text-sm font-semibold leading-tight text-foreground">{displayName}</p>
+                <p className="text-[11px] text-muted-foreground font-medium">{roleLabel}</p>
               </div>
-              <div className="hidden md:block">
-                <p className="text-sm font-medium leading-tight">{displayName}</p>
-                <p className="text-[11px] text-muted-foreground leading-tight">{roleLabel}</p>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-100 to-cyan-100 dark:from-blue-900/40 dark:to-cyan-900/40 border border-blue-200 dark:border-blue-800 flex items-center justify-center shadow-sm cursor-pointer">
+                <span className="text-sm font-bold text-blue-700 dark:text-blue-300">{initials}</span>
               </div>
             </div>
-
-            <button
-              onClick={logout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 border border-destructive/30 transition-colors ml-2"
-              data-testid="btn-logout"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Keluar</span>
-            </button>
           </div>
         </header>
 
