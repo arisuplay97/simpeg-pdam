@@ -97,6 +97,9 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     console.error("Internal Server Error:", err);
+    try {
+      require("fs").appendFileSync("error_log.txt", new Date().toISOString() + " ERROR: " + (err.stack || err) + "\n");
+    } catch(e) {}
 
     if (res.headersSent) {
       return next(err);

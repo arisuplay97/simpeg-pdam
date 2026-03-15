@@ -5,7 +5,7 @@ import {
   departments, positions, employees, attendance, leaveRequests,
   payroll, payrollDeductions, financeTransactions, performanceReviews, mutations,
   trainings, documents, notifications, users, branches, subDepartments,
-  rankPromotions, salaryIncreases, approvalLogs
+  rankPromotions, salaryIncreases, approvalLogs, exportLogs, payslipLogs
 } from "@shared/schema";
 import { count, eq } from "drizzle-orm";
 import { hashPassword } from "./auth";
@@ -18,6 +18,8 @@ async function clearDatabase() {
   await db.delete(trainings);
   await db.delete(performanceReviews);
   await db.delete(financeTransactions);
+  await db.delete(exportLogs);
+  await db.delete(payslipLogs);
   await db.delete(payrollDeductions);
   await db.delete(payroll);
   await db.delete(leaveRequests);
