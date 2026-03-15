@@ -9,7 +9,7 @@ import { Link } from "wouter";
 import {
   Users, UserCheck, UserCog, Clock, AlertTriangle, FileText,
   Calendar, DollarSign, TrendingUp, Bell, Activity, Shield, ArrowRight, Timer,
-  Search, Filter, GraduationCap, Building2
+  Search, Filter, GraduationCap, Building2, CheckCircle2
 } from "lucide-react";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
