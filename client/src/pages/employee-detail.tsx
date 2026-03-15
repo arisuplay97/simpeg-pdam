@@ -29,6 +29,7 @@ export default function EmployeeDetail() {
   const { toast } = useToast();
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "superadmin";
   const isSuperAdmin = currentUser?.role === "superadmin";
+  const isPegawai = currentUser?.role === "pegawai" || !currentUser?.role;
 
   const { data: employee, isLoading } = useQuery<Employee>({
     queryKey: ["/api/employees", employeeId],
@@ -135,11 +136,13 @@ export default function EmployeeDetail() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/employees">
-            <Button variant="ghost" size="icon" className="shrink-0" data-testid="btn-back">
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-          </Link>
+          {!isPegawai && (
+            <Link href="/employees">
+              <Button variant="ghost" size="icon" className="shrink-0" data-testid="btn-back">
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+          )}
           <div>
             <h1 className="text-2xl font-bold tracking-tight" data-testid="text-employee-name">{employee.fullName}</h1>
             <div className="flex items-center gap-2 mt-1">

@@ -114,8 +114,14 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {visibleMenuItems.map((item) => {
               const isActive = location === item.path || (item.path !== "/" && location.startsWith(item.path));
               const Icon = item.icon;
+              
+              let targetPath = item.path;
+              if (item.path === "/employees" && isPegawai && user?.employeeId) {
+                targetPath = `/employees/${user.employeeId}`;
+              }
+
               return (
-                <Link key={item.path} href={item.path}>
+                <Link key={item.path} href={targetPath}>
                   <button
                     onClick={() => setMobileOpen(false)}
                     className={`

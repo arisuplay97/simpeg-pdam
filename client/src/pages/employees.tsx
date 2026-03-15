@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import type { Employee, Department, Branch, SubDepartment } from "@shared/schema";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,15 @@ export default function Employees() {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const isSuperAdmin = user?.role === "superadmin";
+  const isPegawai = user?.role === "pegawai" || !user?.role;
+
+  useEffect(() => {
+    if (isPegawai && user?.employeeId) {
+      setLocation(`/employees/${user.employeeId}`);
+    }
+  }, [isPegawai, user?.employeeId, setLocation]);
 
   const deleteMutation = useMutation({
     mutationFn: async (id: number) => {
@@ -81,6 +89,8 @@ export default function Employees() {
 
   const activeCount = employees.filter(e => e.status === "aktif").length;
   const contractCount = employees.filter(e => e.employeeType === "kontrak").length;
+
+  if (isPegawai) return null;
 
   if (isLoading) {
     return (
