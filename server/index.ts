@@ -37,19 +37,14 @@ if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
 
-const PgStore = connectPgSimple(session);
 app.use(
   session({
-    store: new PgStore({
-      conString: process.env.DATABASE_URL,
-    }),
     secret: process.env.SESSION_SECRET || "pdam-session-secret-fallback",
     resave: false,
     saveUninitialized: false,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000,
       httpOnly: true,
-      // For PaaS like Railway/Render, we relax the secure flag unless we explicitly enforce HTTPS proxying via 'trust proxy' everywhere correctly
       secure: false, // process.env.NODE_ENV === "production",
       sameSite: "lax",
     },
