@@ -49,6 +49,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const roleLabel = user?.role === "superadmin" ? "Super Admin" : user?.role === "admin" ? "Administrator" : user?.role === "direktur" ? "Direktur Utama" : user?.role === "petugas" ? "Petugas" : "Pegawai";
 
   const isPetugas = user?.role === "petugas";
+  const isPegawai = user?.role === "pegawai" || !user?.role;
+  const isSuperAdmin = user?.role === "superadmin";
+  const isAdminOrDirektur = user?.role === "admin" || user?.role === "direktur";
   
   // Define which paths are allowed for 'petugas'
   const petugasAllowedPaths = [
@@ -60,11 +63,23 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     "/organization"
   ];
 
+  // Define which paths are allowed for 'pegawai'
+  const pegawaiAllowedPaths = [
+    "/",
+    "/employees",
+    "/attendance",
+    "/leave",
+    "/payroll",
+    "/trainings",
+    "/documents",
+    "/organization"
+  ];
+
   const visibleMenuItems = menuItems.filter(item => {
-    if (isPetugas) {
-      return petugasAllowedPaths.includes(item.path);
-    }
-    return true;
+    if (isSuperAdmin || isAdminOrDirektur) return true;
+    if (isPetugas) return petugasAllowedPaths.includes(item.path);
+    if (isPegawai) return pegawaiAllowedPaths.includes(item.path);
+    return false;
   });
 
   return (

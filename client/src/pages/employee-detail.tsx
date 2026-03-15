@@ -1051,6 +1051,7 @@ function UserAccountDialog({ employeeId, employeeName, userAccount, open, onOpen
                 <SelectTrigger data-testid="select-new-role"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="pegawai">Pegawai</SelectItem>
+                  <SelectItem value="petugas">Petugas</SelectItem>
                   <SelectItem value="admin">Administrator</SelectItem>
                 </SelectContent>
               </Select>
