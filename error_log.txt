@@ -1,0 +1,102 @@
+2026-03-15T09:10:55.393Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:10:56.590Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:10:57.158Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:10:57.364Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:10:58.927Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:10:59.186Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:01.080Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:01.206Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:01.835Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:01.945Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:02.380Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:02.501Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:03.036Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:03.150Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:06.535Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:06.719Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)
+2026-03-15T09:11:08.751Z ERROR: AggregateError [ETIMEDOUT]: 
+    at /app/dist/index.cjs:65:15265
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32824)
+    at async e._rawEnsureSessionStoreTable (/app/dist/index.cjs:65:31444)
+    at async e._asyncQuery (/app/dist/index.cjs:65:32649)

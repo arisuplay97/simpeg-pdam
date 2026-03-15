@@ -42,7 +42,6 @@ app.use(
   session({
     store: new PgStore({
       conString: process.env.DATABASE_URL,
-      createTableIfMissing: true,
     }),
     secret: process.env.SESSION_SECRET || "pdam-session-secret-fallback",
     resave: false,
