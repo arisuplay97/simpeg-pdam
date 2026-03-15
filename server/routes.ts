@@ -286,7 +286,10 @@ export async function registerRoutes(
   });
 
   app.get("/api/attendance", async (req, res) => {
-    const data = await storage.getAttendance(req.query.date as string | undefined);
+    let data = await storage.getAttendance(req.query.date as string | undefined);
+    if (req.session.role === "pegawai" && req.session.employeeId) {
+      data = data.filter(d => d.employeeId === req.session.employeeId);
+    }
     res.json(data);
   });
   app.get("/api/attendance/employee/:id", async (req, res) => {
@@ -310,8 +313,11 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/leave-requests", async (_req, res) => {
-    const data = await storage.getLeaveRequests();
+  app.get("/api/leave-requests", async (req, res) => {
+    let data = await storage.getLeaveRequests();
+    if (req.session.role === "pegawai" && req.session.employeeId) {
+      data = data.filter(d => d.employeeId === req.session.employeeId);
+    }
     res.json(data);
   });
   app.get("/api/leave-requests/employee/:id", async (req, res) => {
@@ -336,7 +342,10 @@ export async function registerRoutes(
   });
 
   app.get("/api/payroll", async (req, res) => {
-    const data = await storage.getPayroll(req.query.period as string | undefined);
+    let data = await storage.getPayroll(req.query.period as string | undefined);
+    if (req.session.role === "pegawai" && req.session.employeeId) {
+      data = data.filter(d => d.employeeId === req.session.employeeId);
+    }
     res.json(data);
   });
   app.get("/api/payroll/employee/:id", async (req, res) => {
@@ -483,8 +492,11 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/performance", async (_req, res) => {
-    const data = await storage.getPerformanceReviews();
+  app.get("/api/performance", async (req, res) => {
+    let data = await storage.getPerformanceReviews();
+    if (req.session.role === "pegawai" && req.session.employeeId) {
+      data = data.filter(d => d.employeeId === req.session.employeeId);
+    }
     res.json(data);
   });
   app.get("/api/performance/employee/:id", async (req, res) => {
@@ -504,8 +516,11 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/mutations", async (_req, res) => {
-    const data = await storage.getMutations();
+  app.get("/api/mutations", async (req, res) => {
+    let data = await storage.getMutations();
+    if (req.session.role === "pegawai" && req.session.employeeId) {
+      data = data.filter(d => d.employeeId === req.session.employeeId);
+    }
     res.json(data);
   });
   app.get("/api/mutations/employee/:id", async (req, res) => {
@@ -530,8 +545,11 @@ export async function registerRoutes(
     res.json(data);
   });
 
-  app.get("/api/documents", async (_req, res) => {
-    const data = await storage.getDocuments();
+  app.get("/api/documents", async (req, res) => {
+    let data = await storage.getDocuments();
+    if (req.session.role === "pegawai" && req.session.employeeId) {
+      data = data.filter(d => d.employeeId === req.session.employeeId || d.employeeId === null);
+    }
     res.json(data);
   });
   app.get("/api/documents/employee/:id", async (req, res) => {
@@ -616,8 +634,11 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/rank-promotions", async (_req, res) => {
-    const data = await storage.getRankPromotions();
+  app.get("/api/rank-promotions", async (req, res) => {
+    let data = await storage.getRankPromotions();
+    if (req.session.role === "pegawai" && req.session.employeeId) {
+      data = data.filter(d => d.employeeId === req.session.employeeId);
+    }
     res.json(data);
   });
   app.get("/api/rank-promotions/employee/:id", async (req, res) => {
@@ -707,8 +728,11 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/salary-increases", async (_req, res) => {
-    const data = await storage.getSalaryIncreases();
+  app.get("/api/salary-increases", async (req, res) => {
+    let data = await storage.getSalaryIncreases();
+    if (req.session.role === "pegawai" && req.session.employeeId) {
+      data = data.filter(d => d.employeeId === req.session.employeeId);
+    }
     res.json(data);
   });
   app.get("/api/salary-increases/employee/:id", async (req, res) => {
