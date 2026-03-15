@@ -76,6 +76,7 @@ export default function Dashboard() {
     queryKey: ["/api/salary-increases"],
   });
 
+  const pendingLeave = leaveRequests.filter(lr => lr.status === "pending");
   const pendingPromotions = rankPromotions.filter(rp => !["approved", "rejected"].includes(rp.status));
   const pendingSalaryIncreases = salaryIncreases.filter(si => !["approved", "rejected"].includes(si.status));
   const awaitingDirApproval = rankPromotions.filter(rp => rp.status === "approval_direktur");
