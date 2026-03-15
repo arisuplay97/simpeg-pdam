@@ -46,7 +46,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const unreadCount = notifications.filter(n => !n.isRead).length;
   const displayName = user?.employee?.fullName || user?.username || "User";
   const initials = displayName.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase();
-  const roleLabel = user?.role === "superadmin" ? "Super Admin" : user?.role === "admin" ? "Administrator" : user?.role === "direktur" ? "Direktur Utama" : "Pegawai";
+  const roleLabel = user?.role === "superadmin" ? "Super Admin" : user?.role === "admin" ? "Administrator" : user?.role === "direktur" ? "Direktur Utama" : user?.role === "petugas" ? "Petugas" : "Pegawai";
+
+  const isPetugas = user?.role === "petugas";
+  
+  // Define which paths are allowed for 'petugas'
+  const petugasAllowedPaths = [
+    "/",
+    "/employees",
+    "/attendance",
+    "/leave",
+    "/documents",
+    "/organization"
+  ];
+
+  const visibleMenuItems = menuItems.filter(item => {
+    if (isPetugas) {
+      return petugasAllowedPaths.includes(item.path);
+    }
+    return true;
+  });
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -77,7 +96,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         <ScrollArea className="flex-1 py-3">
           <nav className="space-y-0.5 px-2">
-            {menuItems.map((item) => {
+            {visibleMenuItems.map((item) => {
               const isActive = location === item.path || (item.path !== "/" && location.startsWith(item.path));
               const Icon = item.icon;
               return (

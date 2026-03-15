@@ -11,7 +11,7 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   CalendarCheck, Clock, AlertTriangle, UserCheck, UserX,
-  Search, LogIn, LogOut as LogOutIcon, Timer, Upload, Download, FileSpreadsheet
+  Search, LogIn, LogOut as LogOutIcon, Timer, Upload, Download, FileSpreadsheet, Trash2
 } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
@@ -38,6 +38,7 @@ export default function AttendancePage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const isAdmin = user?.role === "admin" || user?.role === "direktur" || user?.role === "superadmin";
+  const isSuperAdmin = user?.role === "superadmin";
 
   const { data: allAttendance = [], isLoading } = useQuery<Attendance[]>({
     queryKey: ["/api/attendance"],
@@ -67,6 +68,17 @@ export default function AttendancePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
       toast({ title: "Check-in berhasil" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/attendance/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/attendance"] });
+      toast({ title: "Data absensi dihapus" });
     },
   });
 
@@ -282,6 +294,7 @@ export default function AttendancePage() {
                   <th className="text-left text-xs font-medium text-muted-foreground px-3 py-3">Check-Out</th>
                   <th className="text-left text-xs font-medium text-muted-foreground px-3 py-3">Terlambat</th>
                   <th className="text-left text-xs font-medium text-muted-foreground px-3 py-3">Status</th>
+                  {isAdmin && isSuperAdmin && <th className="text-left text-xs font-medium text-muted-foreground px-3 py-3">Aksi</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -299,13 +312,25 @@ export default function AttendancePage() {
                       {a.checkOut ? <span className="text-sm flex items-center gap-1"><LogOutIcon className="w-3.5 h-3.5 text-sky-500" />{a.checkOut}</span> : <span className="text-sm text-muted-foreground">—</span>}
                     </td>
                     <td className="px-3 py-3">
-                      {(a.lateMinutes ?? 0) > 0 ? <span className="text-sm text-amber-600 flex items-center gap-1"><Timer className="w-3.5 h-3.5" />{a.lateMinutes} mnt</span> : <span className="text-sm text-muted-foreground">—</span>}
+                      {(a.lateMinutes ?? 0) > 0 ? <span className="text-sm font-medium text-red-600">{a.lateMinutes} mnt</span> : <span className="text-sm text-muted-foreground">—</span>}
                     </td>
                     <td className="px-3 py-3">
-                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${statusColors[a.status] || statusColors.hadir}`}>
+                      <span className={`px-2 py-0.5 text-[11px] uppercase ${statusColors[a.status] || ""}`}>
                         {a.status}
                       </span>
                     </td>
+                    {isAdmin && isSuperAdmin && (
+                      <td className="px-3 py-3">
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                          onClick={() => {
+                            if(confirm("Apakah Anda yakin ingin menghapus data absensi ini?")) {
+                              deleteMutation.mutate(a.id);
+                            }
+                          }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

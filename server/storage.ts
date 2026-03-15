@@ -482,4 +482,27 @@ export const storage = {
       pendingSalaryIncreases: pendingSalaryIncreases.count,
     };
   },
+
+  // Individual delete methods for superadmin
+  async deleteAttendance(id: number): Promise<void> {
+    await db.delete(attendance).where(eq(attendance.id, id));
+  },
+  async deleteLeaveRequest(id: number): Promise<void> {
+    await db.delete(leaveRequests).where(eq(leaveRequests.id, id));
+  },
+  async deletePerformanceReview(id: number): Promise<void> {
+    await db.delete(performanceReviews).where(eq(performanceReviews.id, id));
+  },
+  async deleteMutation(id: number): Promise<void> {
+    await db.delete(mutations).where(eq(mutations.id, id));
+  },
+  async deleteTraining(id: number): Promise<void> {
+    await db.delete(trainings).where(eq(trainings.id, id));
+  },
+  async deleteRankPromotion(id: number): Promise<void> {
+    await db.delete(rankPromotions).where(eq(rankPromotions.id, id));
+  },
+  async deleteSalaryIncrease(id: number): Promise<void> {
+    await db.delete(salaryIncreases).where(eq(salaryIncreases.id, id));
+  },
 };

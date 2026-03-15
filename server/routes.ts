@@ -301,6 +301,14 @@ export async function registerRoutes(
     const data = await storage.updateAttendance(parseInt(req.params.id), req.body);
     res.json(data);
   });
+  app.delete("/api/attendance/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deleteAttendance(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
 
   app.get("/api/leave-requests", async (_req, res) => {
     const data = await storage.getLeaveRequests();
@@ -317,6 +325,14 @@ export async function registerRoutes(
   app.put("/api/leave-requests/:id", async (req, res) => {
     const data = await storage.updateLeaveRequest(parseInt(req.params.id), req.body);
     res.json(data);
+  });
+  app.delete("/api/leave-requests/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deleteLeaveRequest(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   });
 
   app.get("/api/payroll", async (req, res) => {
@@ -478,6 +494,14 @@ export async function registerRoutes(
   app.post("/api/performance", async (req, res) => {
     const data = await storage.createPerformanceReview(req.body);
     res.json(data);
+  });
+  app.delete("/api/performance/:id", requireSuperAdmin, async (req, res) => {
+    try {
+      await storage.deletePerformanceReview(parseInt(req.params.id));
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
   });
 
   app.get("/api/mutations", async (_req, res) => {

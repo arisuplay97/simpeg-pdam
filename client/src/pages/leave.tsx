@@ -11,9 +11,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Plus, Clock, CheckCircle2, XCircle, Calendar, ArrowRight, BatteryMedium } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { FileText, Plus, Clock, CheckCircle2, XCircle, Calendar, ArrowRight, BatteryMedium, Trash2 } from "lucide-react";
 
 export default function LeavePage() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "superadmin";
   const [statusFilter, setStatusFilter] = useState("all");
   const [showDialog, setShowDialog] = useState(false);
   const { toast } = useToast();
@@ -46,6 +49,18 @@ export default function LeavePage() {
       queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
       toast({ title: "Status diperbarui" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/leave-requests/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/leave-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
+      toast({ title: "Pengajuan cuti dihapus" });
     },
   });
 
@@ -145,9 +160,21 @@ export default function LeavePage() {
                           </Button>
                         </>
                       )}
-                      <Badge variant={lr.status === "approved" ? "default" : lr.status === "rejected" ? "destructive" : "secondary"} className="text-[11px]">
-                        {lr.status === "approved" ? "Disetujui" : lr.status === "rejected" ? "Ditolak" : "Menunggu"}
-                      </Badge>
+                      {lr.status !== "pending" && (
+                        <Badge variant={lr.status === "approved" ? "default" : "destructive"}>
+                          {lr.status === "approved" ? "Disetujui" : "Ditolak"}
+                        </Badge>
+                      )}
+                      {isSuperAdmin && (
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                          onClick={() => {
+                            if(confirm("Apakah Anda yakin ingin menghapus data cuti ini?")) {
+                              deleteMutation.mutate(lr.id);
+                            }
+                          }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

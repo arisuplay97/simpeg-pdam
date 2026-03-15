@@ -11,11 +11,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeftRight, Plus, ArrowRight } from "lucide-react";
+import { useAuth } from "@/lib/auth";
+import { ArrowLeftRight, Plus, ArrowRight, Trash2 } from "lucide-react";
 
 export default function MutationsPage() {
   const [showDialog, setShowDialog] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === "superadmin";
 
   const { data: mutationsData = [], isLoading } = useQuery<Mutation[]>({
     queryKey: ["/api/mutations"],
@@ -33,6 +36,17 @@ export default function MutationsPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/mutations"] });
       setShowDialog(false);
       toast({ title: "Pengajuan mutasi berhasil" });
+    },
+  });
+
+  const deleteMutationFn = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/mutations/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/mutations"] });
+      toast({ title: "Data mutasi dihapus" });
     },
   });
 
@@ -109,6 +123,16 @@ export default function MutationsPage() {
                       <Badge variant={m.status === "approved" ? "default" : m.status === "rejected" ? "destructive" : "secondary"} className="text-[11px]">
                         {m.status === "approved" ? "Disetujui" : m.status === "rejected" ? "Ditolak" : "Menunggu"}
                       </Badge>
+                      {isSuperAdmin && (
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                          onClick={() => {
+                            if(confirm("Apakah Anda yakin ingin menghapus data mutasi ini?")) {
+                              deleteMutationFn.mutate(m.id);
+                            }
+                          }}>
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

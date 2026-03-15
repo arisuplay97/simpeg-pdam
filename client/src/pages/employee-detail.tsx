@@ -35,6 +35,17 @@ export default function EmployeeDetail() {
     enabled: employeeId > 0,
   });
 
+  const deletePerformance = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/performance/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/performance/employee", employeeId] });
+      toast({ title: "Data kinerja dihapus" });
+    },
+  });
+
   const { data: departments = [] } = useQuery<Department[]>({ queryKey: ["/api/departments"] });
   const { data: branches = [] } = useQuery<Branch[]>({ queryKey: ["/api/branches"] });
   const { data: subDepartments = [] } = useQuery<SubDepartment[]>({ queryKey: ["/api/sub-departments"] });
@@ -329,9 +340,21 @@ export default function EmployeeDetail() {
                         <p className="text-sm font-semibold">{p.period} - {p.reviewType}</p>
                         <p className="text-xs text-muted-foreground">Reviewer: {p.reviewerName}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">{p.totalScore}</p>
-                        <Badge>{p.grade}</Badge>
+                      <div className="text-right flex items-center gap-3">
+                        {isSuperAdmin && (
+                          <Button size="icon" variant="outline" className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                            onClick={() => {
+                              if(confirm("Apakah Anda yakin ingin menghapus data evaluasi kinerja ini?")) {
+                                deletePerformance.mutate(p.id);
+                              }
+                            }}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <div>
+                          <p className="text-2xl font-bold text-primary">{p.totalScore}</p>
+                          <Badge>{p.grade}</Badge>
+                        </div>
                       </div>
                     </div>
                     <div className="space-y-2">

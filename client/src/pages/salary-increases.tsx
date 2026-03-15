@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import { TrendingUp, Plus, ArrowRight, CheckCircle, XCircle, Clock, DollarSign, Users, AlertTriangle } from "lucide-react";
+import { TrendingUp, Plus, ArrowRight, CheckCircle, XCircle, Clock, DollarSign, Users, AlertTriangle, Trash2 } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
   pending: "Menunggu",
@@ -43,6 +43,7 @@ export default function SalaryIncreasesPage() {
   const [rejectReason, setRejectReason] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
+  const isSuperAdmin = user?.role === "superadmin";
 
   const { data: salaryIncreases = [], isLoading } = useQuery<SalaryIncrease[]>({
     queryKey: ["/api/salary-increases"],
@@ -100,6 +101,18 @@ export default function SalaryIncreasesPage() {
     },
     onError: (error: any) => {
       toast({ title: "Gagal menyetujui", description: error.message, variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/salary-increases/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/salary-increases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/eligible-salary-increases"] });
+      toast({ title: "Data kenaikan gaji dihapus" });
     },
   });
 
@@ -347,6 +360,16 @@ export default function SalaryIncreasesPage() {
                             <span className="text-xs text-muted-foreground italic max-w-[150px] truncate" title={item.rejectionReason}>
                               {item.rejectionReason}
                             </span>
+                          )}
+                          {isSuperAdmin && (
+                            <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                              onClick={() => {
+                                if(confirm("Apakah Anda yakin ingin menghapus data kenaikan gaji ini?")) {
+                                  deleteMutation.mutate(item.id);
+                                }
+                              }}>
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
                           )}
                         </div>
                       </td>

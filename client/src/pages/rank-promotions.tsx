@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
-import { Shield, Plus, ArrowRight, FileCheck, Clock, CheckCircle2, XCircle, Users, ChevronRight } from "lucide-react";
+import { Shield, Plus, ArrowRight, FileCheck, Clock, CheckCircle2, XCircle, Users, ChevronRight, Trash2 } from "lucide-react";
 
 const STATUS_LABELS: Record<string, string> = {
   diajukan: "Diajukan",
@@ -59,6 +59,7 @@ export default function RankPromotionsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const { toast } = useToast();
   const { user } = useAuth();
+  const isSuperAdmin = user?.role === "superadmin";
 
   const { data: promotions = [], isLoading } = useQuery<RankPromotion[]>({
     queryKey: ["/api/rank-promotions"],
@@ -115,6 +116,18 @@ export default function RankPromotionsPage() {
     },
     onError: (err: Error) => {
       toast({ title: "Gagal memperbarui", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deletePromotion = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/rank-promotions/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/rank-promotions"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/eligible-promotions"] });
+      toast({ title: "Data kenaikan pangkat dihapus" });
     },
   });
 
@@ -338,6 +351,16 @@ export default function RankPromotionsPage() {
                               )}
                               {p.skNumber && (
                                 <span className="text-xs text-muted-foreground">SK: {p.skNumber}</span>
+                              )}
+                              {isSuperAdmin && (
+                                <Button size="sm" variant="outline" className="h-7 w-7 p-0 text-red-600 hover:bg-red-50 hover:text-red-700 hover:border-red-200"
+                                  onClick={() => {
+                                    if(confirm("Apakah Anda yakin ingin menghapus data kenaikan pangkat ini?")) {
+                                      deletePromotion.mutate(p.id);
+                                    }
+                                  }}>
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
                               )}
                             </div>
                           </td>
