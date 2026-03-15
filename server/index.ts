@@ -24,6 +24,15 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 
+app.get('/api/_debug_log', (req, res) => {
+  try {
+    const log = require('fs').readFileSync('error_log.txt', 'utf8');
+    res.type('text/plain').send(log);
+  } catch (err: any) {
+    res.type('text/plain').send('Wait, error: ' + err.message);
+  }
+});
+
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
